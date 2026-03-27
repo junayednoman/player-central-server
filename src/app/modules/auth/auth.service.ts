@@ -10,7 +10,7 @@ import crypto from "crypto";
 import ApiError from "../../classes/ApiError";
 import prisma from "../../utils/prisma";
 import { sendEmail } from "../../utils/sendEmail";
-import { uploadToS3 } from "../../utils/awss3";
+import { deleteFromS3, uploadToS3 } from "../../utils/awss3";
 import {
   TChangePasswordInput,
   TLoginInput,
@@ -52,189 +52,194 @@ const signUp = async (payload: TSignup, file: TFile) => {
 
   const imageUrl = await uploadToS3(file);
 
-  const result = await prisma.$transaction(async tn => {
-    const result = await tn.auth.upsert({
-      where: {
-        email: payload.email,
-      },
-      create: authData,
-      update: authData,
-    });
+  try {
+    const result = await prisma.$transaction(async tn => {
+      const result = await tn.auth.upsert({
+        where: {
+          email: payload.email,
+        },
+        create: authData,
+        update: authData,
+      });
 
-    await tn.profile.upsert({
-      where: {
-        authId: result.id,
-      },
-      create: {
-        authId: result.id,
-        name: payload.name,
-        image: imageUrl,
-      },
-      update: {
-        name: payload.name,
-        image: imageUrl,
-      },
-    });
+      await tn.profile.upsert({
+        where: {
+          authId: result.id,
+        },
+        create: {
+          authId: result.id,
+          name: payload.name,
+          image: imageUrl,
+        },
+        update: {
+          name: payload.name,
+          image: imageUrl,
+        },
+      });
 
-    if (payload.role === UserRole.PLAYER) {
-      const age = getAge(payload.dob);
-      if (age < 18 && (!payload.parentId || !payload.parentRelationship)) {
-        throw new ApiError(
-          400,
-          "Parent details are required for players under 18."
-        );
-      }
+      if (payload.role === UserRole.PLAYER) {
+        const age = getAge(payload.dob);
+        if (age < 18 && (!payload.parentId || !payload.parentRelationship)) {
+          throw new ApiError(
+            400,
+            "Parent details are required for players under 18."
+          );
+        }
 
-      if (payload.parentId) {
-        const parentExists = await tn.parentProfile.findUnique({
+        if (payload.parentId) {
+          const parentExists = await tn.parentProfile.findUnique({
+            where: {
+              id: payload.parentId,
+            },
+          });
+          if (!parentExists) {
+            throw new ApiError(400, "Parent not found.");
+          }
+        }
+
+        const playerProfile = await tn.playerProfile.upsert({
           where: {
-            id: payload.parentId,
+            authId: result.id,
+          },
+          create: {
+            authId: result.id,
+            dob: payload.dob,
+            height: payload.height,
+            position: payload.position,
+            bio: payload.bio,
+          },
+          update: {
+            dob: payload.dob,
+            height: payload.height,
+            position: payload.position,
+            bio: payload.bio,
           },
         });
-        if (!parentExists) {
-          throw new ApiError(400, "Parent not found.");
+
+        if (age < 18 && payload.parentId && payload.parentRelationship) {
+          await tn.child.create({
+            data: {
+              playerId: playerProfile.id,
+              parentIds: [payload.parentId],
+              relationship: payload.parentRelationship,
+              status: ChildStatus.PENDING,
+            },
+          });
         }
       }
 
-      const playerProfile = await tn.playerProfile.upsert({
-        where: {
-          authId: result.id,
-        },
-        create: {
-          authId: result.id,
-          dob: payload.dob,
-          height: payload.height,
-          position: payload.position,
-          bio: payload.bio,
-        },
-        update: {
-          dob: payload.dob,
-          height: payload.height,
-          position: payload.position,
-          bio: payload.bio,
-        },
-      });
+      if (payload.role === UserRole.COACH) {
+        const coach = await tn.coachProfile.upsert({
+          where: {
+            authId: result.id,
+          },
+          create: {
+            authId: result.id,
+            experience: payload.experience,
+            location: payload.location,
+            teams: payload.teams,
+            certificate: payload.certificate,
+            price: payload.price,
+            sessionTypes: payload.sessionTypes,
+            mode: payload.mode,
+          },
+          update: {
+            experience: payload.experience,
+            location: payload.location,
+            teams: payload.teams,
+            certificate: payload.certificate,
+            price: payload.price,
+            sessionTypes: payload.sessionTypes,
+            mode: payload.mode,
+          },
+        });
 
-      if (age < 18 && payload.parentId && payload.parentRelationship) {
-        await tn.child.create({
-          data: {
-            playerId: playerProfile.id,
-            parentIds: [payload.parentId],
-            relationship: payload.parentRelationship,
-            status: ChildStatus.PENDING,
+        await tn.coachAvailabilityBlock.createMany({
+          data: payload.availabilityBlocks.map(block => ({
+            coachId: coach.id,
+            type: block.type,
+            isRecurring: block.isRecurring,
+            dayOfWeek: block.dayOfWeek,
+            startTime: parseTime(block.startTime),
+            endTime: parseTime(block.endTime),
+            startAt: parseDate(block.startAt),
+            endAt: parseDate(block.endAt),
+            validFrom: parseDate(block.validFrom),
+            validUntil: parseDate(block.validUntil),
+          })),
+        });
+      }
+
+      if (payload.role === UserRole.SCOUT) {
+        await tn.scoutProfile.upsert({
+          where: {
+            authId: result.id,
+          },
+          create: {
+            authId: result.id,
+            organization: payload.organization,
+            level: payload.level,
+            badge: payload.badge,
+          },
+          update: {
+            organization: payload.organization,
+            level: payload.level,
+            badge: payload.badge,
           },
         });
       }
-    }
 
-    if (payload.role === UserRole.COACH) {
-      const coach = await tn.coachProfile.upsert({
-        where: {
-          authId: result.id,
-        },
-        create: {
-          authId: result.id,
-          experience: payload.experience,
-          location: payload.location,
-          teams: payload.teams,
-          certificate: payload.certificate,
-          price: payload.price,
-          sessionTypes: payload.sessionTypes,
-          mode: payload.mode,
-        },
-        update: {
-          experience: payload.experience,
-          location: payload.location,
-          teams: payload.teams,
-          certificate: payload.certificate,
-          price: payload.price,
-          sessionTypes: payload.sessionTypes,
-          mode: payload.mode,
-        },
-      });
+      if (payload.role === UserRole.PARENT) {
+        await tn.parentProfile.upsert({
+          where: {
+            authId: result.id,
+          },
+          create: {
+            authId: result.id,
+            phone: payload.phone,
+          },
+          update: {
+            phone: payload.phone,
+          },
+        });
+      }
 
-      await tn.coachAvailabilityBlock.createMany({
-        data: payload.availabilityBlocks.map(block => ({
-          coachId: coach.id,
-          type: block.type,
-          isRecurring: block.isRecurring,
-          dayOfWeek: block.dayOfWeek,
-          startTime: parseTime(block.startTime),
-          endTime: parseTime(block.endTime),
-          startAt: parseDate(block.startAt),
-          endAt: parseDate(block.endAt),
-          validFrom: parseDate(block.validFrom),
-          validUntil: parseDate(block.validUntil),
-        })),
-      });
-    }
+      const hashedOtp = await bcrypt.hash(otp.toString(), 10);
+      const otpExpires = new Date(Date.now() + 2 * 60 * 1000);
 
-    if (payload.role === UserRole.SCOUT) {
-      await tn.scoutProfile.upsert({
-        where: {
-          authId: result.id,
-        },
-        create: {
-          authId: result.id,
-          organization: payload.organization,
-          level: payload.level,
-          badge: payload.badge,
-        },
-        update: {
-          organization: payload.organization,
-          level: payload.level,
-          badge: payload.badge,
-        },
-      });
-    }
-
-    if (payload.role === UserRole.PARENT) {
-      await tn.parentProfile.upsert({
-        where: {
-          authId: result.id,
-        },
-        create: {
-          authId: result.id,
-          phone: payload.phone,
-        },
-        update: {
-          phone: payload.phone,
-        },
-      });
-    }
-
-    const hashedOtp = await bcrypt.hash(otp.toString(), 10);
-    const otpExpires = new Date(Date.now() + 2 * 60 * 1000);
-
-    const otpData = {
-      authId: result.id,
-      otp: hashedOtp,
-      expires: otpExpires,
-      attempts: 0,
-      purpose: OTPPurpose.VERIFY_ACCOUNT,
-    };
-
-    await tn.oTP.upsert({
-      where: {
+      const otpData = {
         authId: result.id,
-      },
-      update: otpData,
-      create: otpData,
+        otp: hashedOtp,
+        expires: otpExpires,
+        attempts: 0,
+        purpose: OTPPurpose.VERIFY_ACCOUNT,
+      };
+
+      await tn.oTP.upsert({
+        where: {
+          authId: result.id,
+        },
+        update: otpData,
+        create: otpData,
+      });
+      return result;
     });
+
+    // sendEmail
+    if (result) {
+      const subject = "Complete your signup – verify your email";
+      const replacements = {
+        otp,
+      };
+      const path = "./src/app/emailTemplates/welcome.html";
+      sendEmail(payload.email, subject, path, replacements);
+    }
+
     return result;
-  });
-
-  // sendEmail
-  if (result) {
-    const subject = "Complete your signup – verify your email";
-    const replacements = {
-      otp,
-    };
-    const path = "./src/app/emailTemplates/welcome.html";
-    sendEmail(payload.email, subject, path, replacements);
+  } catch (error) {
+    await deleteFromS3(imageUrl);
+    throw error;
   }
-
-  return result;
 };
 
 const login = async (payload: TLoginInput) => {
