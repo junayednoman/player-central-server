@@ -1,0 +1,237 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Auth {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  role          UserRole
+  status        UserStatus     @default(PENDING)
+  loginProvider LoginProvider
+  fcmToken      String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  otp           OTP?
+  profile       Profile?
+  notifications Notification[]
+  playerProfile PlayerProfile?
+  coachProfile  CoachProfile?
+  scoutProfile  ScoutProfile?
+  parentProfile ParentProfile?
+
+  @@map("auth")
+}
+
+model OTP {
+  id                String     @id @default(uuid())
+  authId            String     @unique
+  auth              Auth       @relation(fields: [authId], references: [id])
+  otp               String
+  purpose           OTPPurpose
+  expires           DateTime
+  attempts          Int        @default(0)
+  isVerified        Boolean    @default(false)
+  resetTokenHash    String?
+  resetTokenExpires DateTime?
+  createdAt         DateTime   @default(now())
+
+  @@unique([authId, purpose])
+  @@map("otp")
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  authId    String   @unique
+  auth      Auth     @relation(fields: [authId], references: [id])
+  name      String
+  image     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model PlayerProfile {
+  id                  String         @id @default(uuid())
+  authId              String         @unique
+  auth                Auth           @relation(fields: [authId], references: [id])
+  dob                 DateTime
+  height              String
+  position            PlayerPosition
+  bio                 String
+  completedChallenges Int            @default(0)
+  uploadStreaks       Int            @default(0)
+  shortListedCount    Int            @default(0)
+  invitationCount     Int            @default(0)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  children            Child[]
+}
+
+model CoachProfile {
+  id           String                   @id @default(uuid())
+  authId       String                   @unique
+  auth         Auth                     @relation(fields: [authId], references: [id])
+  experience   String
+  location     String
+  teams        String[]
+  certificate  String
+  price        Float
+  sessionTypes CoachSessionType[]
+  mode         CoachMode
+  availability CoachAvailabilityBlock[]
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+}
+
+model ScoutProfile {
+  id           String     @id @default(uuid())
+  authId       String     @unique
+  auth         Auth       @relation(fields: [authId], references: [id])
+  organization String
+  level        ScoutLevel
+  badge        String
+  intro        String?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+}
+
+model ParentProfile {
+  id             String   @id @default(uuid())
+  authId         String   @unique
+  auth           Auth     @relation(fields: [authId], references: [id])
+  defaultChildId String?
+  phone          String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model CoachAvailabilityBlock {
+  id          String                       @id @default(uuid())
+  coachId     String
+  coach       CoachProfile                 @relation(fields: [coachId], references: [id])
+  type        CoachAvailabilityType
+  isRecurring Boolean
+  dayOfWeek   CoachAvailabilityDaysOfWeek?
+  startTime   DateTime?                    @db.Time
+  endTime     DateTime?                    @db.Time
+  startAt     DateTime?                    @db.Timestamptz
+  endAt       DateTime?                    @db.Timestamptz
+  validFrom   DateTime?                    @db.Date
+  validUntil  DateTime?                    @db.Date
+  createdAt   DateTime                     @default(now())
+  updatedAt   DateTime                     @updatedAt
+}
+
+model Child {
+  id           String            @id @default(uuid())
+  playerId     String
+  player       PlayerProfile     @relation(fields: [playerId], references: [id])
+  parentIds    String[]
+  relationship ChildRelationShip
+  status       ChildStatus
+}
+
+model Notification {
+  id         String   @id @default(uuid())
+  receiver   Auth     @relation(fields: [receiverId], references: [id])
+  receiverId String
+  title      String
+  body       String
+  date       DateTime @default(now())
+
+  @@map("notification")
+}
+
+model Legal {
+  id             String   @id @default(uuid())
+  privacyPolicy  String
+  termsCondition String
+  aboutUs        String
+  updatedAt      DateTime @updatedAt
+
+  @@map("legal")
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  BLOCKED
+  DELETED
+}
+
+enum LoginProvider {
+  FACEBOOK
+  GOOGLE
+  EMAIL
+}
+
+enum UserRole {
+  ADMIN
+  PLAYER
+  SCOUT
+  COACH
+  PARENT
+}
+
+enum PlayerPosition {
+  MIDFIELDER
+  ATTACKER
+  DEFENDER
+  GOALKEEPER
+}
+
+enum CoachSessionType {
+  ONE_TO_ONE
+  GROUP
+  SKILL_BASED
+}
+
+enum CoachMode {
+  PLAYER_TRAVELS
+  COACH_TRAVELS
+}
+
+enum ScoutLevel {
+  LOCAL
+  REGIONAL
+  NATIONAL
+}
+
+enum CoachAvailabilityType {
+  AVAILABLE
+  BLACKOUT
+}
+
+enum CoachAvailabilityDaysOfWeek {
+  D0
+  D1
+  D2
+  D3
+  D4
+  D5
+  D6
+}
+
+enum ChildRelationShip {
+  FATHER
+  MOTHER
+  UNCLE
+  OTHER
+}
+
+enum ChildStatus {
+  PENDING
+  APPROVED
+}
+
+enum OTPPurpose {
+  VERIFY_ACCOUNT
+  RESET_PASSWORD
+}
