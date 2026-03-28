@@ -6,6 +6,7 @@ import { otpRoutes } from "../modules/otp/otp.routes";
 import { notificationRoutes } from "../modules/notification/notification.routes";
 import { legalRoutes } from "../modules/legal/legal.routes";
 import { playerRoutes } from "../modules/player/player.routes";
+import { coachRoutes } from "../modules/coach/coach.routes";
 
 const router = Router();
 
@@ -17,6 +18,7 @@ const routes = [
   { path: "/legal", route: legalRoutes },
   { path: "/upload-files", route: fileRoutes },
   { path: "/players", route: playerRoutes },
+  { path: "/coaches", route: coachRoutes },
 ];
 
 routes.forEach(route => {

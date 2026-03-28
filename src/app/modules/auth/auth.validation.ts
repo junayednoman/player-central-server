@@ -41,7 +41,7 @@ const playerSignupZod = z.object({
 const coachSignupZod = z.object({
   role: z.literal("COACH"),
   ...commonSignupFields,
-  experience: z.string().min(1, "Experience is required").trim(),
+  experience: z.number().nonnegative(),
   location: z.string().min(1, "Location is required").trim(),
   teams: z.array(z.string().min(1)).nonempty("Teams are required"),
   certificate: z.string().min(1, "Certificate is required").trim(),

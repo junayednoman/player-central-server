@@ -8,24 +8,44 @@ datasource db {
 }
 
 model Auth {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  password      String
-  role          UserRole
-  status        UserStatus     @default(PENDING)
-  loginProvider LoginProvider
-  fcmToken      String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  otp           OTP?
-  profile       Profile?
-  notifications Notification[]
-  playerProfile PlayerProfile?
-  coachProfile  CoachProfile?
-  scoutProfile  ScoutProfile?
-  parentProfile ParentProfile?
-  reactions     Reaction[]
-  comments      Comment[]
+  id                         String                     @id @default(uuid())
+  email                      String                     @unique
+  password                   String
+  role                       UserRole
+  status                     UserStatus                 @default(PENDING)
+  loginProvider              LoginProvider
+  fcmToken                   String?
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  otp                        OTP?
+  profile                    Profile?
+  notifications              Notification[]
+  playerProfile              PlayerProfile?
+  coachProfile               CoachProfile?
+  scoutProfile               ScoutProfile?
+  parentProfile              ParentProfile?
+  reactions                  Reaction[]
+  comments                   Comment[]
+  coachAvailabilityBlocks    CoachAvailabilityBlock[]   @relation("CoachAvailabilityBlocks")
+  coachChallenges            Challenge[]                @relation("CoachChallenges")
+  coachSessionBookings       SessionBooking[]           @relation("CoachSessionBookings")
+  playerSessionBookings      SessionBooking[]           @relation("PlayerSessionBookings")
+  coachCustomSessionBookings CustomSessionBooking[]     @relation("CoachCustomSessionBookings")
+  scoutInvitations           Invitation[]               @relation("ScoutInvitations")
+  playerInvitations          Invitation[]               @relation("PlayerInvitations")
+  playerPosts                Post[]                     @relation("PlayerPosts")
+  followingRelations         Following[]                @relation("FollowingFollowing")
+  followerRelations          Following[]                @relation("FollowingFollower")
+  coachBookmarks             PlayerBookmark[]           @relation("CoachBookmarks")
+  playerBookmarks            PlayerBookmark[]           @relation("PlayerBookmarks")
+  scoutShortlists            PlayerShortlist[]          @relation("ScoutShortlists")
+  playerShortlists           PlayerShortlist[]          @relation("PlayerShortlists")
+  playerBookingApprovals     BookingApprovalRequest[]   @relation("PlayerBookingApprovals")
+  playerPostApprovals        PostApprovalRequest[]      @relation("PlayerPostApprovals")
+  playerChallengeApprovals   ChallengeApprovalRequest[] @relation("PlayerChallengeApprovals")
+  playerReviewsGiven         Review[]                   @relation("PlayerReviewsGiven")
+  coachReviews               Review[]                   @relation("CoachReviews")
+  playerChildren             Child[]                    @relation("PlayerChildren")
 
   @@map("auth")
 }
@@ -60,66 +80,46 @@ model Profile {
 }
 
 model PlayerProfile {
-  id                  String                     @id @default(uuid())
-  authId              String                     @unique
-  auth                Auth                       @relation(fields: [authId], references: [id])
+  id                  String         @id @default(uuid())
+  authId              String         @unique
+  auth                Auth           @relation(fields: [authId], references: [id])
   dob                 DateTime
   height              String
   position            PlayerPosition
   bio                 String
-  completedChallenges Int                        @default(0)
-  uploadStreaks       Int                        @default(0)
-  shortListedCount    Int                        @default(0)
-  invitationCount     Int                        @default(0)
-  createdAt           DateTime                   @default(now())
-  updatedAt           DateTime                   @updatedAt
-  children            Child[]
-  posts               Post[]
-  sessionBookings     SessionBooking[]
-  invitations         Invitation[]
-  followings          Following[]                @relation("FollowingFollower")
-  followers           Following[]                @relation("FollowingFollowing")
-  bookmarks           PlayerBookmark[]
-  shortlists          PlayerShortlist[]
-  bookingApprovals    BookingApprovalRequest[]
-  postApprovals       PostApprovalRequest[]
-  challengeApprovals  ChallengeApprovalRequest[]
-  reviewsGiven        Review[]
+  completedChallenges Int            @default(0)
+  uploadStreaks       Int            @default(0)
+  shortListedCount    Int            @default(0)
+  invitationCount     Int            @default(0)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 }
 
 model CoachProfile {
-  id                    String                   @id @default(uuid())
-  authId                String                   @unique
-  auth                  Auth                     @relation(fields: [authId], references: [id])
-  experience            String
-  location              String
-  teams                 String[]
-  certificate           String
-  price                 Float
-  sessionTypes          CoachSessionType[]
-  mode                  CoachSessionMode
-  availability          CoachAvailabilityBlock[]
-  createdAt             DateTime                 @default(now())
-  updatedAt             DateTime                 @updatedAt
-  challenges            Challenge[]
-  sessionBookings       SessionBooking[]
-  customSessionBookings CustomSessionBooking[]
-  bookmarks             PlayerBookmark[]
-  reviews               Review[]
+  id           String             @id @default(uuid())
+  authId       String             @unique
+  auth         Auth               @relation(fields: [authId], references: [id])
+  experience   Int
+  location     String
+  teams        String[]
+  certificate  String
+  price        Float
+  sessionTypes CoachSessionType[]
+  mode         CoachSessionMode
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
 }
 
 model ScoutProfile {
-  id           String            @id @default(uuid())
-  authId       String            @unique
-  auth         Auth              @relation(fields: [authId], references: [id])
+  id           String     @id @default(uuid())
+  authId       String     @unique
+  auth         Auth       @relation(fields: [authId], references: [id])
   organization String
   level        ScoutLevel
   badge        String
   intro        String?
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
-  invitations  Invitation[]
-  shortlists   PlayerShortlist[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model ParentProfile {
@@ -134,8 +134,8 @@ model ParentProfile {
 
 model CoachAvailabilityBlock {
   id          String                       @id @default(uuid())
-  coachId     String
-  coach       CoachProfile                 @relation(fields: [coachId], references: [id])
+  coachAuthId String
+  coach       Auth                         @relation("CoachAvailabilityBlocks", fields: [coachAuthId], references: [id])
   type        CoachAvailabilityType
   isRecurring Boolean
   dayOfWeek   CoachAvailabilityDaysOfWeek?
@@ -151,8 +151,8 @@ model CoachAvailabilityBlock {
 
 model Challenge {
   id               String                     @id @default(uuid())
-  coachId          String
-  coach            CoachProfile               @relation(fields: [coachId], references: [id])
+  coachAuthId      String
+  coach            Auth                       @relation("CoachChallenges", fields: [coachAuthId], references: [id])
   category         PlayerPosition
   video            String
   title            String
@@ -165,10 +165,10 @@ model Challenge {
 
 model SessionBooking {
   id               String                   @id @default(uuid())
-  coachId          String
-  coach            CoachProfile             @relation(fields: [coachId], references: [id])
-  playerId         String
-  player           PlayerProfile            @relation(fields: [playerId], references: [id])
+  coachAuthId      String
+  coach            Auth                     @relation("CoachSessionBookings", fields: [coachAuthId], references: [id])
+  playerAuthId     String
+  player           Auth                     @relation("PlayerSessionBookings", fields: [playerAuthId], references: [id])
   sessionType      CoachSessionType
   sessionMode      CoachSessionMode
   startAt          DateTime
@@ -179,37 +179,37 @@ model SessionBooking {
 }
 
 model CustomSessionBooking {
-  id          String                @id @default(uuid())
-  coachId     String
-  coach       CoachProfile          @relation(fields: [coachId], references: [id])
-  playerIds   String[]
-  sessionType CoachSessionType
-  maxPlayers  Int
-  mode        CoachSessionMode
-  startAt     DateTime
-  endAt       DateTime
-  status      CoachingSessionStatus
-  bookedAt    DateTime              @default(now())
+  id            String                @id @default(uuid())
+  coachAuthId   String
+  coach         Auth                  @relation("CoachCustomSessionBookings", fields: [coachAuthId], references: [id])
+  playerAuthIds String[]
+  sessionType   CoachSessionType
+  maxPlayers    Int
+  mode          CoachSessionMode
+  startAt       DateTime
+  endAt         DateTime
+  status        CoachingSessionStatus
+  bookedAt      DateTime              @default(now())
 }
 
 model Invitation {
-  id             String        @id @default(uuid())
-  scoutId        String
-  scout          ScoutProfile  @relation(fields: [scoutId], references: [id])
-  playerId       String
-  player         PlayerProfile @relation(fields: [playerId], references: [id])
+  id             String   @id @default(uuid())
+  scoutAuthId    String
+  scout          Auth     @relation("ScoutInvitations", fields: [scoutAuthId], references: [id])
+  playerAuthId   String
+  player         Auth     @relation("PlayerInvitations", fields: [playerAuthId], references: [id])
   trialDate      DateTime
   street         String
   buildingNumber String
   postCode       String
   instruction    String
-  sentAt         DateTime      @default(now())
+  sentAt         DateTime @default(now())
 }
 
 model Post {
   id               String                @id @default(uuid())
-  playerId         String
-  player           PlayerProfile         @relation(fields: [playerId], references: [id])
+  playerAuthId     String
+  player           Auth                  @relation("PlayerPosts", fields: [playerAuthId], references: [id])
   caption          String
   video            String
   position         PlayerPosition
@@ -244,77 +244,77 @@ model Comment {
 }
 
 model Following {
-  id          String        @id @default(uuid())
-  followingId String
-  following   PlayerProfile @relation("FollowingFollowing", fields: [followingId], references: [id])
-  followerId  String
-  follower    PlayerProfile @relation("FollowingFollower", fields: [followerId], references: [id])
+  id              String @id @default(uuid())
+  followingAuthId String
+  following       Auth   @relation("FollowingFollowing", fields: [followingAuthId], references: [id])
+  followerAuthId  String
+  follower        Auth   @relation("FollowingFollower", fields: [followerAuthId], references: [id])
 }
 
 model PlayerBookmark {
-  id       String        @id @default(uuid())
-  coachId  String
-  coach    CoachProfile  @relation(fields: [coachId], references: [id])
-  playerId String
-  player   PlayerProfile @relation(fields: [playerId], references: [id])
+  id           String @id @default(uuid())
+  coachAuthId  String
+  coach        Auth   @relation("CoachBookmarks", fields: [coachAuthId], references: [id])
+  playerAuthId String
+  player       Auth   @relation("PlayerBookmarks", fields: [playerAuthId], references: [id])
 }
 
 model PlayerShortlist {
-  id       String        @id @default(uuid())
-  scoutId  String
-  scout    ScoutProfile  @relation(fields: [scoutId], references: [id])
-  playerId String
-  player   PlayerProfile @relation(fields: [playerId], references: [id])
+  id           String @id @default(uuid())
+  scoutAuthId  String
+  scout        Auth   @relation("ScoutShortlists", fields: [scoutAuthId], references: [id])
+  playerAuthId String
+  player       Auth   @relation("PlayerShortlists", fields: [playerAuthId], references: [id])
 }
 
 model BookingApprovalRequest {
-  id          String                @id @default(uuid())
-  playerId    String
-  player      PlayerProfile         @relation(fields: [playerId], references: [id])
-  bookingId   String
-  booking     SessionBooking        @relation(fields: [bookingId], references: [id])
-  status      ApprovalRequestStatus
-  requestedAt DateTime              @default(now())
+  id           String                @id @default(uuid())
+  playerAuthId String
+  player       Auth                  @relation("PlayerBookingApprovals", fields: [playerAuthId], references: [id])
+  bookingId    String
+  booking      SessionBooking        @relation(fields: [bookingId], references: [id])
+  status       ApprovalRequestStatus
+  requestedAt  DateTime              @default(now())
 }
 
 model PostApprovalRequest {
-  id          String                @id @default(uuid())
-  playerId    String
-  player      PlayerProfile         @relation(fields: [playerId], references: [id])
-  postId      String
-  post        Post                  @relation(fields: [postId], references: [id])
-  status      ApprovalRequestStatus
-  requestedAt DateTime              @default(now())
+  id           String                @id @default(uuid())
+  playerAuthId String
+  player       Auth                  @relation("PlayerPostApprovals", fields: [playerAuthId], references: [id])
+  postId       String
+  post         Post                  @relation(fields: [postId], references: [id])
+  status       ApprovalRequestStatus
+  requestedAt  DateTime              @default(now())
 }
 
 model ChallengeApprovalRequest {
-  id          String                @id @default(uuid())
-  playerId    String
-  player      PlayerProfile         @relation(fields: [playerId], references: [id])
-  challengeId String
-  challenge   Challenge             @relation(fields: [challengeId], references: [id])
-  status      ApprovalRequestStatus
-  requestedAt DateTime              @default(now())
+  id           String                @id @default(uuid())
+  playerAuthId String
+  player       Auth                  @relation("PlayerChallengeApprovals", fields: [playerAuthId], references: [id])
+  challengeId  String
+  challenge    Challenge             @relation(fields: [challengeId], references: [id])
+  status       ApprovalRequestStatus
+  requestedAt  DateTime              @default(now())
 }
 
 model Review {
-  id      String        @id @default(uuid())
-  giverId String
-  giver   PlayerProfile @relation(fields: [giverId], references: [id])
-  coachId String
-  coach   CoachProfile  @relation(fields: [coachId], references: [id])
-  text    String
-  rating  Float
-  givenAt DateTime      @default(now())
+  id          String   @id @default(uuid())
+  giverAuthId String
+  giver       Auth     @relation("PlayerReviewsGiven", fields: [giverAuthId], references: [id])
+  coachAuthId String
+  coach       Auth     @relation("CoachReviews", fields: [coachAuthId], references: [id])
+  text        String
+  rating      Float
+  givenAt     DateTime @default(now())
 }
 
 model Child {
-  id           String            @id @default(uuid())
-  playerId     String
-  player       PlayerProfile     @relation(fields: [playerId], references: [id])
-  parentIds    String[]
-  relationship ChildRelationShip
-  status       ChildStatus
+  id            String            @id @default(uuid())
+  playerAuthId  String
+  player        Auth              @relation("PlayerChildren", fields: [playerAuthId], references: [id])
+  parentAuthIds String[]
+  relationship  ChildRelationShip
+  status        ChildStatus
 }
 
 model Notification {

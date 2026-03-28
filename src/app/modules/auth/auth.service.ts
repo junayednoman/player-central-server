@@ -87,9 +87,10 @@ const signUp = async (payload: TSignup, file: TFile) => {
         }
 
         if (payload.parentId) {
-          const parentExists = await tn.parentProfile.findUnique({
+          const parentExists = await tn.auth.findUnique({
             where: {
               id: payload.parentId,
+              role: UserRole.PARENT,
             },
           });
           if (!parentExists) {
@@ -97,7 +98,7 @@ const signUp = async (payload: TSignup, file: TFile) => {
           }
         }
 
-        const playerProfile = await tn.playerProfile.upsert({
+        await tn.playerProfile.upsert({
           where: {
             authId: result.id,
           },
@@ -119,8 +120,8 @@ const signUp = async (payload: TSignup, file: TFile) => {
         if (age < 18 && payload.parentId && payload.parentRelationship) {
           await tn.child.create({
             data: {
-              playerId: playerProfile.id,
-              parentIds: [payload.parentId],
+              playerAuthId: result.id,
+              parentAuthIds: [payload.parentId],
               relationship: payload.parentRelationship,
               status: ChildStatus.PENDING,
             },
@@ -129,7 +130,7 @@ const signUp = async (payload: TSignup, file: TFile) => {
       }
 
       if (payload.role === UserRole.COACH) {
-        const coach = await tn.coachProfile.upsert({
+        await tn.coachProfile.upsert({
           where: {
             authId: result.id,
           },
@@ -156,7 +157,7 @@ const signUp = async (payload: TSignup, file: TFile) => {
 
         await tn.coachAvailabilityBlock.createMany({
           data: payload.availabilityBlocks.map(block => ({
-            coachId: coach.id,
+            coachAuthId: result.id,
             type: block.type,
             isRecurring: block.isRecurring,
             dayOfWeek: block.dayOfWeek,
@@ -269,7 +270,6 @@ const login = async (payload: TLoginInput) => {
         authId: auth.id,
       },
       select: {
-        id: true,
         dob: true,
       },
     });
@@ -279,7 +279,7 @@ const login = async (payload: TLoginInput) => {
       if (age < 18) {
         const approvedChild = await prisma.child.findFirst({
           where: {
-            playerId: player.id,
+            playerAuthId: auth.id,
             status: "APPROVED",
           },
           select: { id: true },
