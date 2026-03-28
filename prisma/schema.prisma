@@ -24,6 +24,8 @@ model Auth {
   coachProfile  CoachProfile?
   scoutProfile  ScoutProfile?
   parentProfile ParentProfile?
+  reactions     Reaction[]
+  comments      Comment[]
 
   @@map("auth")
 }
@@ -58,25 +60,25 @@ model Profile {
 }
 
 model PlayerProfile {
-  id                  String         @id @default(uuid())
-  authId              String         @unique
-  auth                Auth           @relation(fields: [authId], references: [id])
+  id                  String                     @id @default(uuid())
+  authId              String                     @unique
+  auth                Auth                       @relation(fields: [authId], references: [id])
   dob                 DateTime
   height              String
   position            PlayerPosition
   bio                 String
-  completedChallenges Int            @default(0)
-  uploadStreaks       Int            @default(0)
-  shortListedCount    Int            @default(0)
-  invitationCount     Int            @default(0)
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  completedChallenges Int                        @default(0)
+  uploadStreaks       Int                        @default(0)
+  shortListedCount    Int                        @default(0)
+  invitationCount     Int                        @default(0)
+  createdAt           DateTime                   @default(now())
+  updatedAt           DateTime                   @updatedAt
   children            Child[]
   posts               Post[]
   sessionBookings     SessionBooking[]
   invitations         Invitation[]
-  followings          Following[]     @relation("FollowingFollower")
-  followers           Following[]     @relation("FollowingFollowing")
+  followings          Following[]                @relation("FollowingFollower")
+  followers           Following[]                @relation("FollowingFollowing")
   bookmarks           PlayerBookmark[]
   shortlists          PlayerShortlist[]
   bookingApprovals    BookingApprovalRequest[]
@@ -86,36 +88,36 @@ model PlayerProfile {
 }
 
 model CoachProfile {
-  id           String                   @id @default(uuid())
-  authId       String                   @unique
-  auth         Auth                     @relation(fields: [authId], references: [id])
-  experience   String
-  location     String
-  teams        String[]
-  certificate  String
-  price        Float
-  sessionTypes CoachSessionType[]
-  mode         CoachSessionMode
-  availability CoachAvailabilityBlock[]
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  challenges   Challenge[]
-  sessionBookings SessionBooking[]
+  id                    String                   @id @default(uuid())
+  authId                String                   @unique
+  auth                  Auth                     @relation(fields: [authId], references: [id])
+  experience            String
+  location              String
+  teams                 String[]
+  certificate           String
+  price                 Float
+  sessionTypes          CoachSessionType[]
+  mode                  CoachSessionMode
+  availability          CoachAvailabilityBlock[]
+  createdAt             DateTime                 @default(now())
+  updatedAt             DateTime                 @updatedAt
+  challenges            Challenge[]
+  sessionBookings       SessionBooking[]
   customSessionBookings CustomSessionBooking[]
-  bookmarks     PlayerBookmark[]
-  reviews       Review[]
+  bookmarks             PlayerBookmark[]
+  reviews               Review[]
 }
 
 model ScoutProfile {
-  id           String     @id @default(uuid())
-  authId       String     @unique
-  auth         Auth       @relation(fields: [authId], references: [id])
+  id           String            @id @default(uuid())
+  authId       String            @unique
+  auth         Auth              @relation(fields: [authId], references: [id])
   organization String
   level        ScoutLevel
   badge        String
   intro        String?
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   invitations  Invitation[]
   shortlists   PlayerShortlist[]
 }
@@ -148,38 +150,38 @@ model CoachAvailabilityBlock {
 }
 
 model Challenge {
-  id          String              @id @default(uuid())
-  coachId     String
-  coach       CoachProfile        @relation(fields: [coachId], references: [id])
-  category    PlayerPosition
-  video       String
-  title       String
-  instruction String
-  difficulty  ChallengeDifficulty
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  id               String                     @id @default(uuid())
+  coachId          String
+  coach            CoachProfile               @relation(fields: [coachId], references: [id])
+  category         PlayerPosition
+  video            String
+  title            String
+  instruction      String
+  difficulty       ChallengeDifficulty
+  createdAt        DateTime                   @default(now())
+  updatedAt        DateTime                   @updatedAt
   approvalRequests ChallengeApprovalRequest[]
 }
 
 model SessionBooking {
-  id          String                  @id @default(uuid())
-  coachId     String
-  coach       CoachProfile            @relation(fields: [coachId], references: [id])
-  playerId    String
-  player      PlayerProfile           @relation(fields: [playerId], references: [id])
-  sessionType CoachSessionType
-  sessionMode CoachSessionMode
-  startAt     DateTime
-  endAt       DateTime
-  status      CoachingSessionStatus
-  bookedAt    DateTime                @default(now())
+  id               String                   @id @default(uuid())
+  coachId          String
+  coach            CoachProfile             @relation(fields: [coachId], references: [id])
+  playerId         String
+  player           PlayerProfile            @relation(fields: [playerId], references: [id])
+  sessionType      CoachSessionType
+  sessionMode      CoachSessionMode
+  startAt          DateTime
+  endAt            DateTime
+  status           CoachingSessionStatus
+  bookedAt         DateTime                 @default(now())
   approvalRequests BookingApprovalRequest[]
 }
 
 model CustomSessionBooking {
-  id          String                  @id @default(uuid())
+  id          String                @id @default(uuid())
   coachId     String
-  coach       CoachProfile            @relation(fields: [coachId], references: [id])
+  coach       CoachProfile          @relation(fields: [coachId], references: [id])
   playerIds   String[]
   sessionType CoachSessionType
   maxPlayers  Int
@@ -187,7 +189,7 @@ model CustomSessionBooking {
   startAt     DateTime
   endAt       DateTime
   status      CoachingSessionStatus
-  bookedAt    DateTime                @default(now())
+  bookedAt    DateTime              @default(now())
 }
 
 model Invitation {
@@ -205,19 +207,40 @@ model Invitation {
 }
 
 model Post {
-  id             String               @id @default(uuid())
-  playerId       String
-  player         PlayerProfile        @relation(fields: [playerId], references: [id])
-  caption        String
-  video          String
-  position       PlayerPosition
-  difficultyType ChallengeDifficulty
-  type           PostType
-  status         PostStatus
-  shareCount     Int                  @default(0)
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
+  id               String                @id @default(uuid())
+  playerId         String
+  player           PlayerProfile         @relation(fields: [playerId], references: [id])
+  caption          String
+  video            String
+  position         PlayerPosition
+  difficultyType   ChallengeDifficulty
+  type             PostType
+  status           PostStatus
+  shareCount       Int                   @default(0)
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
   approvalRequests PostApprovalRequest[]
+  reactions        Reaction[]
+  comments         Comment[]
+}
+
+model Reaction {
+  id     String @id @default(uuid())
+  postId String
+  post   Post   @relation(fields: [postId], references: [id])
+  authId String
+  auth   Auth   @relation(fields: [authId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  authorId  String
+  author    Auth     @relation(fields: [authorId], references: [id])
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  text      String
+  isEdited  Boolean  @default(false)
+  createdAt DateTime @default(now())
 }
 
 model Following {
@@ -229,29 +252,29 @@ model Following {
 }
 
 model PlayerBookmark {
-  id       String       @id @default(uuid())
+  id       String        @id @default(uuid())
   coachId  String
-  coach    CoachProfile @relation(fields: [coachId], references: [id])
+  coach    CoachProfile  @relation(fields: [coachId], references: [id])
   playerId String
   player   PlayerProfile @relation(fields: [playerId], references: [id])
 }
 
 model PlayerShortlist {
-  id       String       @id @default(uuid())
+  id       String        @id @default(uuid())
   scoutId  String
-  scout    ScoutProfile @relation(fields: [scoutId], references: [id])
+  scout    ScoutProfile  @relation(fields: [scoutId], references: [id])
   playerId String
   player   PlayerProfile @relation(fields: [playerId], references: [id])
 }
 
 model BookingApprovalRequest {
-  id          String                  @id @default(uuid())
+  id          String                @id @default(uuid())
   playerId    String
-  player      PlayerProfile           @relation(fields: [playerId], references: [id])
+  player      PlayerProfile         @relation(fields: [playerId], references: [id])
   bookingId   String
-  booking     SessionBooking          @relation(fields: [bookingId], references: [id])
+  booking     SessionBooking        @relation(fields: [bookingId], references: [id])
   status      ApprovalRequestStatus
-  requestedAt DateTime                @default(now())
+  requestedAt DateTime              @default(now())
 }
 
 model PostApprovalRequest {
@@ -275,14 +298,14 @@ model ChallengeApprovalRequest {
 }
 
 model Review {
-  id      String       @id @default(uuid())
+  id      String        @id @default(uuid())
   giverId String
   giver   PlayerProfile @relation(fields: [giverId], references: [id])
   coachId String
-  coach   CoachProfile @relation(fields: [coachId], references: [id])
+  coach   CoachProfile  @relation(fields: [coachId], references: [id])
   text    String
   rating  Float
-  givenAt DateTime     @default(now())
+  givenAt DateTime      @default(now())
 }
 
 model Child {

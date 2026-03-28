@@ -1,13 +1,13 @@
 import z from "zod";
 import { emailZod, passwordZod } from "../../validation/global.validation";
 import {
-  CoachMode,
   CoachSessionType,
   ChildRelationShip,
   PlayerPosition,
   ScoutLevel,
   UserStatus,
 } from "@prisma/client";
+import { CoachSessionMode } from "@prisma/client";
 
 const commonSignupFields = {
   email: emailZod,
@@ -49,7 +49,7 @@ const coachSignupZod = z.object({
   sessionTypes: z
     .array(z.nativeEnum(CoachSessionType))
     .nonempty("Session types are required"),
-  mode: z.nativeEnum(CoachMode),
+  mode: z.nativeEnum(CoachSessionMode),
   availabilityBlocks: z
     .array(availabilityBlockZod)
     .nonempty("At least one availability block is required"),
