@@ -9,6 +9,7 @@ import {
 import {
   TCreateComment,
   TCreatePost,
+  TToggleReaction,
   TUpdateComment,
   TUpdatePost,
 } from "./post.validation";
@@ -200,6 +201,31 @@ const removeComment = async (commentId: string, authorId: string) => {
   return prisma.comment.delete({ where: { id: commentId } });
 };
 
+const toggleReaction = async (
+  postId: string,
+  authId: string,
+  _payload: TToggleReaction
+) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw new ApiError(404, "Post not found");
+
+  const existing = await prisma.reaction.findFirst({
+    where: { postId, authId },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await prisma.reaction.delete({ where: { id: existing.id } });
+    return { reacted: false };
+  }
+
+  await prisma.reaction.create({
+    data: { postId, authId },
+  });
+
+  return { reacted: true };
+};
+
 export const postServices = {
   create,
   getAll,
@@ -209,4 +235,5 @@ export const postServices = {
   addComment,
   updateComment,
   removeComment,
+  toggleReaction,
 };

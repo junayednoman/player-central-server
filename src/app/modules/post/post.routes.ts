@@ -7,6 +7,7 @@ import { postController } from "./post.controller";
 import {
   createCommentZod,
   createPostZod,
+  toggleReactionZod,
   updateCommentZod,
   updatePostZod,
 } from "./post.validation";
@@ -55,6 +56,13 @@ router.delete(
   "/comments/:commentId",
   authorize(),
   postController.removeComment
+);
+
+router.post(
+  "/:postId/reactions/toggle",
+  authorize(),
+  validate(toggleReactionZod),
+  postController.toggleReaction
 );
 
 export const postRoutes = router;

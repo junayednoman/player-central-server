@@ -23,7 +23,10 @@ export const updateCommentZod = z.object({
   text: z.string().min(1, "Comment is required").trim(),
 });
 
+export const toggleReactionZod = z.object({});
+
 export type TCreatePost = z.infer<typeof createPostZod>;
 export type TUpdatePost = z.infer<typeof updatePostZod>;
 export type TCreateComment = z.infer<typeof createCommentZod>;
 export type TUpdateComment = z.infer<typeof updateCommentZod>;
+export type TToggleReaction = z.infer<typeof toggleReactionZod>;

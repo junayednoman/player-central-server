@@ -102,6 +102,18 @@ const removeComment = handleAsyncRequest(
   }
 );
 
+const toggleReaction = handleAsyncRequest(async (req: TRequest, res: Response) => {
+  const result = await postServices.toggleReaction(
+    req.params.postId as string,
+    req.user?.id as string,
+    req.body
+  );
+  sendResponse(res, {
+    message: "Reaction updated successfully!",
+    data: result,
+  });
+});
+
 export const postController = {
   create,
   getAll,
@@ -111,4 +123,5 @@ export const postController = {
   addComment,
   updateComment,
   removeComment,
+  toggleReaction,
 };
