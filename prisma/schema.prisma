@@ -46,6 +46,9 @@ model Auth {
   playerReviewsGiven         Review[]                   @relation("PlayerReviewsGiven")
   coachReviews               Review[]                   @relation("CoachReviews")
   playerChildren             Child[]                    @relation("PlayerChildren")
+  challengeSubmissions       ChallengeSubmission[]      @relation("ChallengeSubmissions")
+  challengeReactions         ChallengeReaction[]        @relation("ChallengeReactions")
+  challengeComments          ChallengeComment[]         @relation("ChallengeComments")
 
   @@map("auth")
 }
@@ -158,9 +161,45 @@ model Challenge {
   title            String
   instruction      String
   difficulty       ChallengeDifficulty
+  shareCount       Int                        @default(0)
   createdAt        DateTime                   @default(now())
   updatedAt        DateTime                   @updatedAt
   approvalRequests ChallengeApprovalRequest[]
+  submissions      ChallengeSubmission[]
+  reactions        ChallengeReaction[]
+  comments         ChallengeComment[]
+}
+
+model ChallengeSubmission {
+  id          String    @id @default(uuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  playerId    String    @map("playerId")
+  player      Auth      @relation("ChallengeSubmissions", fields: [playerId], references: [id])
+  video       String
+  createdAt   DateTime  @default(now())
+
+  @@map("challenge_submission")
+}
+
+model ChallengeReaction {
+  id          String    @id @default(uuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  authId      String
+  auth        Auth      @relation("ChallengeReactions", fields: [authId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model ChallengeComment {
+  id          String    @id @default(uuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  authorId    String
+  author      Auth      @relation("ChallengeComments", fields: [authorId], references: [id])
+  text        String
+  isEdited    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 }
 
 model SessionBooking {
@@ -293,6 +332,7 @@ model ChallengeApprovalRequest {
   player       Auth                  @relation("PlayerChallengeApprovals", fields: [playerAuthId], references: [id])
   challengeId  String
   challenge    Challenge             @relation(fields: [challengeId], references: [id])
+  video        String?
   status       ApprovalRequestStatus
   requestedAt  DateTime              @default(now())
 }

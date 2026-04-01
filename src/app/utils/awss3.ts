@@ -35,6 +35,7 @@ export const uploadImage = multer({
 
 //upload a single file
 export const uploadToS3 = async (file: TFile): Promise<string> => {
+  if (!file) throw new ApiError(400, "File is required");
   const fileName = `player-central/${Date.now()}-${file.originalname}`;
 
   const command = new PutObjectCommand({
