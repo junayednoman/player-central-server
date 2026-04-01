@@ -8,6 +8,7 @@ import { legalRoutes } from "../modules/legal/legal.routes";
 import { playerRoutes } from "../modules/player/player.routes";
 import { coachRoutes } from "../modules/coach/coach.routes";
 import { challengeRoutes } from "../modules/challenge/challenge.routes";
+import { postRoutes } from "../modules/post/post.routes";
 
 const router = Router();
 
@@ -21,6 +22,7 @@ const routes = [
   { path: "/players", route: playerRoutes },
   { path: "/coaches", route: coachRoutes },
   { path: "/challenges", route: challengeRoutes },
+  { path: "/posts", route: postRoutes },
 ];
 
 routes.forEach(route => {

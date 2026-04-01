@@ -73,7 +73,35 @@ const getSingle = async (id: string) => {
     },
   });
   if (!challenge) throw new ApiError(404, "Challenge not found");
-  return challenge;
+
+  const [acceptedCount, acceptedPreview] = await Promise.all([
+    prisma.challengeSubmission.count({ where: { challengeId: id } }),
+    prisma.challengeSubmission.findMany({
+      where: { challengeId: id },
+      orderBy: { createdAt: "desc" },
+      take: 4,
+      select: {
+        player: {
+          select: {
+            profile: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+  ]);
+
+  return {
+    ...challenge,
+    acceptedCount,
+    acceptedPreview: acceptedPreview
+      .map(item => item.player?.profile)
+      .filter(Boolean),
+  };
 };
 
 const update = async (
