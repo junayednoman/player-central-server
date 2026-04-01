@@ -4,7 +4,12 @@ import { UserRole } from "@prisma/client";
 import validate from "../../middlewares/validate";
 import { upload } from "../../utils/awss3";
 import { postController } from "./post.controller";
-import { createPostZod, updatePostZod } from "./post.validation";
+import {
+  createCommentZod,
+  createPostZod,
+  updateCommentZod,
+  updatePostZod,
+} from "./post.validation";
 
 const router = Router();
 
@@ -16,7 +21,7 @@ router.post(
   postController.create
 );
 
-router.get("/", postController.getAll);
+router.get("/", authorize({ optional: true }), postController.getAll);
 
 router.put(
   "/:postId",
@@ -32,6 +37,24 @@ router.delete(
   postController.remove
 );
 
-router.post("/:postId/share", postController.share);
+router.post("/:postId/share", authorize(), postController.share);
+
+router.post(
+  "/:postId/comments",
+  authorize(),
+  validate(createCommentZod),
+  postController.addComment
+);
+router.put(
+  "/comments/:commentId",
+  authorize(),
+  validate(updateCommentZod),
+  postController.updateComment
+);
+router.delete(
+  "/comments/:commentId",
+  authorize(),
+  postController.removeComment
+);
 
 export const postRoutes = router;

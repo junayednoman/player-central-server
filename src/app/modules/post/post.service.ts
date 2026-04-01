@@ -6,9 +6,18 @@ import {
   calculatePagination,
   TPaginationOptions,
 } from "../../utils/paginationCalculation";
-import { TCreatePost, TUpdatePost } from "./post.validation";
+import {
+  TCreateComment,
+  TCreatePost,
+  TUpdateComment,
+  TUpdatePost,
+} from "./post.validation";
 
-const create = async (playerAuthId: string, payload: TCreatePost, file: TFile) => {
+const create = async (
+  playerAuthId: string,
+  payload: TCreatePost,
+  file: TFile
+) => {
   const videoUrl = await uploadToS3(file);
 
   const post = await prisma.post.create({
@@ -23,7 +32,7 @@ const create = async (playerAuthId: string, payload: TCreatePost, file: TFile) =
   return post;
 };
 
-const getAll = async (options: TPaginationOptions) => {
+const getAll = async (options: TPaginationOptions, userId?: string) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const posts = await prisma.post.findMany({
@@ -39,6 +48,27 @@ const getAll = async (options: TPaginationOptions) => {
           },
         },
       },
+      reactions: userId
+        ? {
+            where: { authId: userId },
+            select: { id: true },
+            take: 1,
+          }
+        : false,
+      comments: userId
+        ? {
+            where: { authorId: userId },
+            select: { id: true },
+            take: 1,
+          }
+        : false,
+      shares: userId
+        ? {
+            where: { authId: userId },
+            select: { id: true },
+            take: 1,
+          }
+        : false,
       _count: {
         select: {
           comments: true,
@@ -63,7 +93,13 @@ const getAll = async (options: TPaginationOptions) => {
       ...post,
       commentCount: post._count.comments,
       reactionCount: post._count.reactions,
+      isReacted: userId ? (post.reactions?.length ?? 0) > 0 : false,
+      isCommented: userId ? (post.comments?.length ?? 0) > 0 : false,
+      isShared: userId ? (post.shares?.length ?? 0) > 0 : false,
       _count: undefined,
+      reactions: undefined,
+      comments: undefined,
+      shares: undefined,
     })),
   };
 };
@@ -99,11 +135,69 @@ const remove = async (postId: string, playerAuthId: string) => {
   return prisma.post.delete({ where: { id: postId } });
 };
 
-const incrementShare = async (postId: string) => {
-  return prisma.post.update({
-    where: { id: postId },
-    data: { shareCount: { increment: 1 } },
+const incrementShare = async (postId: string, authId: string) => {
+  return prisma.$transaction(async tx => {
+    const existing = await tx.postShare.findUnique({
+      where: { postId_authId: { postId, authId } },
+      select: { id: true },
+    });
+
+    if (existing) {
+      return tx.post.findUnique({ where: { id: postId } });
+    }
+
+    await tx.postShare.create({
+      data: { postId, authId },
+    });
+
+    return tx.post.update({
+      where: { id: postId },
+      data: { shareCount: { increment: 1 } },
+    });
   });
+};
+
+const addComment = async (
+  postId: string,
+  authorId: string,
+  payload: TCreateComment
+) => {
+  const post = await prisma.post.findUnique({ where: { id: postId } });
+  if (!post) throw new ApiError(404, "Post not found");
+
+  return prisma.comment.create({
+    data: {
+      postId,
+      authorId,
+      text: payload.text,
+    },
+  });
+};
+
+const updateComment = async (
+  commentId: string,
+  authorId: string,
+  payload: TUpdateComment
+) => {
+  const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+  if (!comment) throw new ApiError(404, "Comment not found");
+  if (comment.authorId !== authorId) throw new ApiError(403, "Unauthorized");
+
+  return prisma.comment.update({
+    where: { id: commentId },
+    data: {
+      text: payload.text,
+      isEdited: true,
+    },
+  });
+};
+
+const removeComment = async (commentId: string, authorId: string) => {
+  const comment = await prisma.comment.findUnique({ where: { id: commentId } });
+  if (!comment) throw new ApiError(404, "Comment not found");
+  if (comment.authorId !== authorId) throw new ApiError(403, "Unauthorized");
+
+  return prisma.comment.delete({ where: { id: commentId } });
 };
 
 export const postServices = {
@@ -112,4 +206,7 @@ export const postServices = {
   update,
   remove,
   incrementShare,
+  addComment,
+  updateComment,
+  removeComment,
 };

@@ -19,9 +19,9 @@ const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
-const getAll = handleAsyncRequest(async (req: Request, res: Response) => {
+const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
-  const result = await postServices.getAll(options);
+  const result = await postServices.getAll(options, req.user?.id);
   sendResponse(res, {
     message: "Posts retrieved successfully!",
     data: result,
@@ -52,9 +52,10 @@ const remove = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
-const share = handleAsyncRequest(async (req: Request, res: Response) => {
+const share = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await postServices.incrementShare(
-    req.params.postId as string
+    req.params.postId as string,
+    req.user?.id as string
   );
   sendResponse(res, {
     message: "Post share count updated successfully!",
@@ -62,10 +63,52 @@ const share = handleAsyncRequest(async (req: Request, res: Response) => {
   });
 });
 
+const addComment = handleAsyncRequest(async (req: TRequest, res: Response) => {
+  const result = await postServices.addComment(
+    req.params.postId as string,
+    req.user?.id as string,
+    req.body
+  );
+  sendResponse(res, {
+    message: "Comment added successfully!",
+    data: result,
+  });
+});
+
+const updateComment = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await postServices.updateComment(
+      req.params.commentId as string,
+      req.user?.id as string,
+      req.body
+    );
+    sendResponse(res, {
+      message: "Comment updated successfully!",
+      data: result,
+    });
+  }
+);
+
+const removeComment = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await postServices.removeComment(
+      req.params.commentId as string,
+      req.user?.id as string
+    );
+    sendResponse(res, {
+      message: "Comment deleted successfully!",
+      data: result,
+    });
+  }
+);
+
 export const postController = {
   create,
   getAll,
   update,
   remove,
   share,
+  addComment,
+  updateComment,
+  removeComment,
 };

@@ -26,6 +26,7 @@ model Auth {
   parentProfile              ParentProfile?
   reactions                  Reaction[]
   comments                   Comment[]
+  postShares                 PostShare[]
   coachAvailabilityBlocks    CoachAvailabilityBlock[]   @relation("CoachAvailabilityBlocks")
   coachChallenges            Challenge[]                @relation("CoachChallenges")
   coachSessionBookings       SessionBooking[]           @relation("CoachSessionBookings")
@@ -261,6 +262,7 @@ model Post {
   approvalRequests PostApprovalRequest[]
   reactions        Reaction[]
   comments         Comment[]
+  shares           PostShare[]
 }
 
 model Reaction {
@@ -280,6 +282,17 @@ model Comment {
   text      String
   isEdited  Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model PostShare {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  authId    String
+  auth      Auth     @relation(fields: [authId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([postId, authId])
 }
 
 model Following {
