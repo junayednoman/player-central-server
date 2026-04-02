@@ -216,6 +216,7 @@ model SessionBooking {
   status           CoachingSessionStatus
   bookedAt         DateTime                 @default(now())
   approvalRequests BookingApprovalRequest[]
+  createdAt        DateTime                 @default(now())
 }
 
 model CustomSessionBooking {

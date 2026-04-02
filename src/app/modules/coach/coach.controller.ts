@@ -46,9 +46,67 @@ const updateProfile = handleAsyncRequest(
   }
 );
 
+const addAvailability = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await coachServices.addAvailability(
+      req.user?.id as string,
+      req.body
+    );
+    sendResponse(res, {
+      message: "Availability added successfully!",
+      data: result,
+    });
+  }
+);
+
+const removeAvailability = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await coachServices.removeAvailability(
+      req.user?.id as string,
+      req.params.availabilityId as string
+    );
+    sendResponse(res, {
+      message: "Availability removed successfully!",
+      data: result,
+    });
+  }
+);
+
+const getAvailabilityCalendar = handleAsyncRequest(
+  async (req: Request, res: Response) => {
+    const month = req.query.month as string;
+    const result = await coachServices.getAvailabilityCalendar(
+      req.params.coachId as string,
+      month
+    );
+    sendResponse(res, {
+      message: "Availability calendar retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
+const getAvailabilitySlots = handleAsyncRequest(
+  async (req: Request, res: Response) => {
+    const date = req.query.date as string;
+    const result = await coachServices.getAvailabilitySlots(
+      req.params.coachId as string,
+      date
+    );
+    sendResponse(res, {
+      message: "Availability slots retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 export const coachController = {
   getAll,
   getSingle,
   getMyProfile,
   updateProfile,
+  addAvailability,
+  removeAvailability,
+  getAvailabilityCalendar,
+  getAvailabilitySlots,
 };

@@ -4,7 +4,10 @@ import authorize from "../../middlewares/authorize";
 import { UserRole } from "@prisma/client";
 import { uploadImage } from "../../utils/awss3";
 import validate from "../../middlewares/validate";
-import { updateCoachProfileZod } from "./coach.validation";
+import {
+  createCoachAvailabilityZod,
+  updateCoachProfileZod,
+} from "./coach.validation";
 
 const router = Router();
 
@@ -17,6 +20,25 @@ router.patch(
   uploadImage.single("image"),
   validate(updateCoachProfileZod, { formData: true }),
   coachController.updateProfile
+);
+router.post(
+  "/availability",
+  authorize(UserRole.COACH),
+  validate(createCoachAvailabilityZod),
+  coachController.addAvailability
+);
+router.delete(
+  "/availability/:availabilityId",
+  authorize(UserRole.COACH),
+  coachController.removeAvailability
+);
+router.get(
+  "/:coachId/availability/calendar",
+  coachController.getAvailabilityCalendar
+);
+router.get(
+  "/:coachId/availability/slots",
+  coachController.getAvailabilitySlots
 );
 
 export const coachRoutes = router;
