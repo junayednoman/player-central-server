@@ -10,6 +10,7 @@ import { coachRoutes } from "../modules/coach/coach.routes";
 import { challengeRoutes } from "../modules/challenge/challenge.routes";
 import { postRoutes } from "../modules/post/post.routes";
 import { sessionBookingRoutes } from "../modules/sessionBooking/sessionBooking.routes";
+import { followingRoutes } from "../modules/following/following.routes";
 
 const router = Router();
 
@@ -25,6 +26,8 @@ const routes = [
   { path: "/challenges", route: challengeRoutes },
   { path: "/posts", route: postRoutes },
   { path: "/session-bookings", route: sessionBookingRoutes },
+  { path: "/following", route: followingRoutes },
+  { path: "/users", route: followingRoutes },
 ];
 
 routes.forEach(route => {
