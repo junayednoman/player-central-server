@@ -13,6 +13,7 @@ import {
   TUpdateComment,
   TUpdatePost,
 } from "./post.validation";
+import { getAge } from "../../utils/common.utils";
 
 const create = async (
   playerAuthId: string,
@@ -21,14 +22,30 @@ const create = async (
 ) => {
   const videoUrl = await uploadToS3(file);
 
+  const playerProfile = await prisma.playerProfile.findUnique({
+    where: { authId: playerAuthId },
+    select: { dob: true },
+  });
+  const isMinor = playerProfile?.dob ? getAge(playerProfile.dob) < 18 : false;
+
   const post = await prisma.post.create({
     data: {
       playerAuthId,
       video: videoUrl,
-      status: "PENDING",
+      status: isMinor ? "PENDING" : "APPROVED",
       ...payload,
     },
   });
+
+  if (isMinor) {
+    await prisma.postApprovalRequest.create({
+      data: {
+        playerAuthId,
+        postId: post.id,
+        status: "PENDING",
+      },
+    });
+  }
 
   return post;
 };

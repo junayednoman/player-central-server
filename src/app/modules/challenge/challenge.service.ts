@@ -244,7 +244,7 @@ const getCoachSubmissions = async (
       limit: take,
       total,
     },
-    submissions: submissions.map((submission) => ({
+    submissions: submissions.map(submission => ({
       id: submission.id,
       video: submission.video,
       challenge: submission.challenge,
