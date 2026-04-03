@@ -89,6 +89,22 @@ const checkSlotAvailability = async (
   if (conflict) {
     throw new ApiError(409, "Selected slot is not available");
   }
+
+  const customConflict = await prisma.customSessionBooking.findFirst({
+    where: {
+      coachAuthId,
+      status: {
+        in: ["PENDING", "APPROVED", "UPCOMING"],
+      },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+    },
+    select: { id: true },
+  });
+
+  if (customConflict) {
+    throw new ApiError(409, "Selected slot is not available");
+  }
 };
 
 const checkPlayerDoubleBooking = async (
@@ -109,6 +125,22 @@ const checkPlayerDoubleBooking = async (
   });
 
   if (conflict) {
+    throw new ApiError(409, "You already have a booking in this time slot");
+  }
+
+  const customConflict = await prisma.customSessionBooking.findFirst({
+    where: {
+      playerAuthIds: { has: playerAuthId },
+      status: {
+        in: ["PENDING", "APPROVED", "UPCOMING"],
+      },
+      startAt: { lt: endAt },
+      endAt: { gt: startAt },
+    },
+    select: { id: true },
+  });
+
+  if (customConflict) {
     throw new ApiError(409, "You already have a booking in this time slot");
   }
 };

@@ -387,23 +387,34 @@ const getAvailabilityCalendar = async (coachAuthId: string, month: string) => {
     Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 1)
   );
 
-  const [availabilityBlocks, blackoutBlocks, bookings] = await Promise.all([
-    prisma.coachAvailabilityBlock.findMany({
-      where: { coachAuthId, type: "AVAILABLE" },
-    }),
-    prisma.coachAvailabilityBlock.findMany({
-      where: { coachAuthId, type: "BLACKOUT" },
-    }),
-    prisma.sessionBooking.findMany({
-      where: {
-        coachAuthId,
-        status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
-        startAt: { lt: monthEnd },
-        endAt: { gt: monthStart },
-      },
-      select: { startAt: true, endAt: true },
-    }),
-  ]);
+  const [availabilityBlocks, blackoutBlocks, bookings, customSessions] =
+    await Promise.all([
+      prisma.coachAvailabilityBlock.findMany({
+        where: { coachAuthId, type: "AVAILABLE" },
+      }),
+      prisma.coachAvailabilityBlock.findMany({
+        where: { coachAuthId, type: "BLACKOUT" },
+      }),
+      prisma.sessionBooking.findMany({
+        where: {
+          coachAuthId,
+          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+          startAt: { lt: monthEnd },
+          endAt: { gt: monthStart },
+        },
+        select: { startAt: true, endAt: true },
+      }),
+      prisma.customSessionBooking.findMany({
+        where: {
+          coachAuthId,
+          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+          startAt: { lt: monthEnd },
+          endAt: { gt: monthStart },
+        },
+        select: { startAt: true, endAt: true },
+      }),
+    ]);
+  const bookedRanges = bookings.concat(customSessions);
 
   const days: Array<{
     date: string;
@@ -475,7 +486,7 @@ const getAvailabilityCalendar = async (coachAuthId: string, month: string) => {
 
     const hasAvailableSlots = slotsAfterBlackout.length > 0;
     const hasBookedSlots = slotsAfterBlackout.some(slot =>
-      bookings.some(b => slot.startAt < b.endAt && slot.endAt > b.startAt)
+      bookedRanges.some(b => slot.startAt < b.endAt && slot.endAt > b.startAt)
     );
 
     days.push({
@@ -498,23 +509,34 @@ const getAvailabilitySlots = async (coachAuthId: string, date: string) => {
     Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + 1)
   );
 
-  const [availabilityBlocks, blackoutBlocks, bookings] = await Promise.all([
-    prisma.coachAvailabilityBlock.findMany({
-      where: { coachAuthId, type: "AVAILABLE" },
-    }),
-    prisma.coachAvailabilityBlock.findMany({
-      where: { coachAuthId, type: "BLACKOUT" },
-    }),
-    prisma.sessionBooking.findMany({
-      where: {
-        coachAuthId,
-        status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
-        startAt: { lt: nextDay },
-        endAt: { gt: day },
-      },
-      select: { startAt: true, endAt: true },
-    }),
-  ]);
+  const [availabilityBlocks, blackoutBlocks, bookings, customSessions] =
+    await Promise.all([
+      prisma.coachAvailabilityBlock.findMany({
+        where: { coachAuthId, type: "AVAILABLE" },
+      }),
+      prisma.coachAvailabilityBlock.findMany({
+        where: { coachAuthId, type: "BLACKOUT" },
+      }),
+      prisma.sessionBooking.findMany({
+        where: {
+          coachAuthId,
+          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+          startAt: { lt: nextDay },
+          endAt: { gt: day },
+        },
+        select: { startAt: true, endAt: true },
+      }),
+      prisma.customSessionBooking.findMany({
+        where: {
+          coachAuthId,
+          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+          startAt: { lt: nextDay },
+          endAt: { gt: day },
+        },
+        select: { startAt: true, endAt: true },
+      }),
+    ]);
+  const bookedRanges = bookings.concat(customSessions);
 
   const slots = availabilityBlocks
     .map(block => {
@@ -561,7 +583,7 @@ const getAvailabilitySlots = async (coachAuthId: string, date: string) => {
 
   const results = filtered.map(slot => ({
     ...slot,
-    isBooked: bookings.some(
+    isBooked: bookedRanges.some(
       b => slot.startAt < b.endAt && slot.endAt > b.startAt
     ),
   }));
