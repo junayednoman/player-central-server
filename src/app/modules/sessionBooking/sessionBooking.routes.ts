@@ -16,5 +16,10 @@ router.post(
 
 router.get("/", authorize(), sessionBookingController.getAll);
 router.get("/recent", authorize(), sessionBookingController.getRecent);
+router.post(
+  "/:bookingId/confirm-payment",
+  authorize(UserRole.PLAYER, UserRole.PARENT),
+  sessionBookingController.confirmPayment
+);
 
 export const sessionBookingRoutes = router;

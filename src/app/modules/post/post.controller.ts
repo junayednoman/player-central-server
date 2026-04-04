@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import handleAsyncRequest from "../../utils/handleAsyncRequest";
 import { sendResponse } from "../../utils/sendResponse";
 import ApiError from "../../classes/ApiError";
@@ -102,17 +102,19 @@ const removeComment = handleAsyncRequest(
   }
 );
 
-const toggleReaction = handleAsyncRequest(async (req: TRequest, res: Response) => {
-  const result = await postServices.toggleReaction(
-    req.params.postId as string,
-    req.user?.id as string,
-    req.body
-  );
-  sendResponse(res, {
-    message: "Reaction updated successfully!",
-    data: result,
-  });
-});
+const toggleReaction = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await postServices.toggleReaction(
+      req.params.postId as string,
+      req.user?.id as string,
+      req.body
+    );
+    sendResponse(res, {
+      message: "Reaction updated successfully!",
+      data: result,
+    });
+  }
+);
 
 export const postController = {
   create,

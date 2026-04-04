@@ -13,12 +13,25 @@ import {
   toMinutes,
 } from "../../utils/booking.utils";
 import { TCreateSessionBooking } from "./sessionBooking.validation";
+import {
+  createStripePaymentIntent,
+  retrieveStripePaymentIntent,
+} from "../../utils/stripe";
 
 const checkSlotAvailability = async (
   coachAuthId: string,
   startAt: Date,
   endAt: Date
 ) => {
+  const now = new Date();
+  await prisma.sessionBooking.updateMany({
+    where: {
+      status: "PENDING_PAYMENT",
+      reservedUntil: { lt: now },
+    },
+    data: { status: "EXPIRED" },
+  });
+
   const [availabilityBlocks, blackoutBlocks] = await Promise.all([
     prisma.coachAvailabilityBlock.findMany({
       where: { coachAuthId, type: "AVAILABLE" },
@@ -77,9 +90,13 @@ const checkSlotAvailability = async (
   const conflict = await prisma.sessionBooking.findFirst({
     where: {
       coachAuthId,
-      status: {
-        in: ["PENDING", "APPROVED", "UPCOMING"],
-      },
+      OR: [
+        { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+        {
+          status: "PENDING_PAYMENT",
+          reservedUntil: { gt: now },
+        },
+      ],
       startAt: { lt: endAt },
       endAt: { gt: startAt },
     },
@@ -112,12 +129,25 @@ const checkPlayerDoubleBooking = async (
   startAt: Date,
   endAt: Date
 ) => {
+  const now = new Date();
+  await prisma.sessionBooking.updateMany({
+    where: {
+      status: "PENDING_PAYMENT",
+      reservedUntil: { lt: now },
+    },
+    data: { status: "EXPIRED" },
+  });
+
   const conflict = await prisma.sessionBooking.findFirst({
     where: {
       playerAuthId,
-      status: {
-        in: ["PENDING", "APPROVED", "UPCOMING"],
-      },
+      OR: [
+        { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+        {
+          status: "PENDING_PAYMENT",
+          reservedUntil: { gt: now },
+        },
+      ],
       startAt: { lt: endAt },
       endAt: { gt: startAt },
     },
@@ -184,7 +214,7 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
 
   const coachProfile = await prisma.coachProfile.findUnique({
     where: { authId: block.coachAuthId },
-    select: { mode: true, sessionTypes: true },
+    select: { mode: true, sessionTypes: true, price: true },
   });
   if (!coachProfile) throw new ApiError(404, "Coach profile not found");
 
@@ -199,6 +229,12 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
 
   const isMinor = playerProfile?.dob ? getAge(playerProfile.dob) < 18 : false;
 
+  const durationHours =
+    (endAt.getTime() - startAt.getTime()) / (1000 * 60 * 60);
+  const totalAmount = coachProfile.price * durationHours;
+  const reserveMinutes = 15;
+  const reservedUntil = new Date(Date.now() + reserveMinutes * 60 * 1000);
+
   const booking = await prisma.sessionBooking.create({
     data: {
       coachAuthId: block.coachAuthId,
@@ -207,7 +243,8 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
       sessionMode: coachProfile.mode,
       startAt,
       endAt,
-      status: "PENDING",
+      status: "PENDING_PAYMENT",
+      reservedUntil,
     },
   });
 
@@ -227,10 +264,87 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
     };
   }
 
+  const currency = "usd";
+  const intent = await createStripePaymentIntent(
+    Math.round(totalAmount * 100),
+    currency,
+    {
+      bookingId: booking.id,
+      payerAuthId: playerAuthId,
+    }
+  );
+
+  await prisma.payment.create({
+    data: {
+      bookingId: booking.id,
+      payerAuthId: playerAuthId,
+      amount: totalAmount,
+      currency,
+      provider: "stripe",
+      providerIntentId: intent.id,
+      status: "PENDING",
+      expiresAt: reservedUntil,
+    },
+  });
+
   return {
     requiresApproval: false,
     booking,
+    payment: {
+      paymentIntentId: intent.id,
+      clientSecret: intent.client_secret,
+      amount: totalAmount,
+      currency,
+      reservedUntil,
+    },
   };
+};
+
+const confirmPayment = async (bookingId: string, payerAuthId: string) => {
+  const booking = await prisma.sessionBooking.findUnique({
+    where: { id: bookingId },
+  });
+  if (!booking) throw new ApiError(404, "Booking not found");
+
+  if (booking.status !== "PENDING_PAYMENT") {
+    throw new ApiError(400, "Booking is not awaiting payment");
+  }
+
+  if (booking.reservedUntil && booking.reservedUntil < new Date()) {
+    await prisma.sessionBooking.update({
+      where: { id: bookingId },
+      data: { status: "EXPIRED" },
+    });
+    throw new ApiError(400, "Reservation expired");
+  }
+
+  const payment = await prisma.payment.findUnique({
+    where: { bookingId },
+  });
+  if (!payment?.providerIntentId) {
+    throw new ApiError(404, "Payment intent not found");
+  }
+  if (payment.payerAuthId !== payerAuthId) {
+    throw new ApiError(403, "Unauthorized");
+  }
+
+  const intent = await retrieveStripePaymentIntent(payment.providerIntentId);
+  if (intent.status !== "succeeded") {
+    throw new ApiError(400, "Payment not completed");
+  }
+
+  await prisma.$transaction(async tx => {
+    await tx.payment.update({
+      where: { bookingId },
+      data: { status: "SUCCEEDED" },
+    });
+    await tx.sessionBooking.update({
+      where: { id: bookingId },
+      data: { status: "APPROVED", reservedUntil: null },
+    });
+  });
+
+  return { status: "APPROVED" };
 };
 
 const getAll = async (
@@ -288,4 +402,5 @@ export const sessionBookingServices = {
   create,
   getAll,
   getRecent,
+  confirmPayment,
 };

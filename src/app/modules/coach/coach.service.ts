@@ -395,15 +395,21 @@ const getAvailabilityCalendar = async (coachAuthId: string, month: string) => {
       prisma.coachAvailabilityBlock.findMany({
         where: { coachAuthId, type: "BLACKOUT" },
       }),
-      prisma.sessionBooking.findMany({
-        where: {
-          coachAuthId,
-          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
-          startAt: { lt: monthEnd },
-          endAt: { gt: monthStart },
-        },
-        select: { startAt: true, endAt: true },
-      }),
+    prisma.sessionBooking.findMany({
+      where: {
+        coachAuthId,
+        OR: [
+          { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+          {
+            status: "PENDING_PAYMENT",
+            reservedUntil: { gt: new Date() },
+          },
+        ],
+        startAt: { lt: monthEnd },
+        endAt: { gt: monthStart },
+      },
+      select: { startAt: true, endAt: true },
+    }),
       prisma.customSessionBooking.findMany({
         where: {
           coachAuthId,
@@ -517,15 +523,21 @@ const getAvailabilitySlots = async (coachAuthId: string, date: string) => {
       prisma.coachAvailabilityBlock.findMany({
         where: { coachAuthId, type: "BLACKOUT" },
       }),
-      prisma.sessionBooking.findMany({
-        where: {
-          coachAuthId,
-          status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
-          startAt: { lt: nextDay },
-          endAt: { gt: day },
-        },
-        select: { startAt: true, endAt: true },
-      }),
+    prisma.sessionBooking.findMany({
+      where: {
+        coachAuthId,
+        OR: [
+          { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+          {
+            status: "PENDING_PAYMENT",
+            reservedUntil: { gt: new Date() },
+          },
+        ],
+        startAt: { lt: nextDay },
+        endAt: { gt: day },
+      },
+      select: { startAt: true, endAt: true },
+    }),
       prisma.customSessionBooking.findMany({
         where: {
           coachAuthId,

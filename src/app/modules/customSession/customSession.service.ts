@@ -21,7 +21,10 @@ const checkOverlaps = async (
   const conflictCoach = await prisma.sessionBooking.findFirst({
     where: {
       coachAuthId,
-      status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+      OR: [
+        { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+        { status: "PENDING_PAYMENT", reservedUntil: { gt: new Date() } },
+      ],
       startAt: { lt: endAt },
       endAt: { gt: startAt },
     },
@@ -48,7 +51,10 @@ const checkOverlaps = async (
     const conflictPlayers = await prisma.sessionBooking.findFirst({
       where: {
         playerAuthId: { in: playerAuthIds },
-        status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
+        OR: [
+          { status: { in: ["PENDING", "APPROVED", "UPCOMING"] } },
+          { status: "PENDING_PAYMENT", reservedUntil: { gt: new Date() } },
+        ],
         startAt: { lt: endAt },
         endAt: { gt: startAt },
       },

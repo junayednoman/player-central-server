@@ -40,8 +40,22 @@ const getRecent = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
+const confirmPayment = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await sessionBookingServices.confirmPayment(
+      req.params.bookingId as string,
+      req.user?.id as string
+    );
+    sendResponse(res, {
+      message: "Payment confirmed successfully!",
+      data: result,
+    });
+  }
+);
+
 export const sessionBookingController = {
   create,
   getAll,
   getRecent,
+  confirmPayment,
 };

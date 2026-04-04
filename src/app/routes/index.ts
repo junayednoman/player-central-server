@@ -14,6 +14,8 @@ import { followingRoutes } from "../modules/following/following.routes";
 import { customSessionRoutes } from "../modules/customSession/customSession.routes";
 import { postApprovalRequestRoutes } from "../modules/postApprovalRequest/postApprovalRequest.routes";
 import { challengeApprovalRequestRoutes } from "../modules/challengeApprovalRequest/challengeApprovalRequest.routes";
+import { parentRoutes } from "../modules/parent/parent.routes";
+import { bookingApprovalRequestRoutes } from "../modules/bookingApprovalRequest/bookingApprovalRequest.routes";
 
 const router = Router();
 
@@ -34,6 +36,8 @@ const routes = [
   { path: "/custom-sessions", route: customSessionRoutes },
   { path: "/post-approval-requests", route: postApprovalRequestRoutes },
   { path: "/challenge-approval-requests", route: challengeApprovalRequestRoutes },
+  { path: "/parents", route: parentRoutes },
+  { path: "/booking-approval-requests", route: bookingApprovalRequestRoutes },
 ];
 
 routes.forEach(route => {

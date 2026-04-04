@@ -27,6 +27,7 @@ model Auth {
   reactions                  Reaction[]
   comments                   Comment[]
   postShares                 PostShare[]
+  payments                   Payment[]
   coachAvailabilityBlocks    CoachAvailabilityBlock[]   @relation("CoachAvailabilityBlocks")
   coachChallenges            Challenge[]                @relation("CoachChallenges")
   coachSessionBookings       SessionBooking[]           @relation("CoachSessionBookings")
@@ -215,7 +216,9 @@ model SessionBooking {
   endAt            DateTime
   status           CoachingSessionStatus
   bookedAt         DateTime                 @default(now())
+  reservedUntil    DateTime?
   approvalRequests BookingApprovalRequest[]
+  payment          Payment?
   createdAt        DateTime                 @default(now())
 }
 
@@ -231,6 +234,22 @@ model CustomSessionBooking {
   endAt         DateTime
   status        CoachingSessionStatus
   bookedAt      DateTime              @default(now())
+}
+
+model Payment {
+  id               String          @id @default(uuid())
+  bookingId        String          @unique
+  booking          SessionBooking  @relation(fields: [bookingId], references: [id])
+  payerAuthId      String
+  payer            Auth            @relation(fields: [payerAuthId], references: [id])
+  amount           Float
+  currency         String          @default("usd")
+  provider         String          @default("stripe")
+  providerIntentId String?
+  status           PaymentStatus   @default(PENDING)
+  expiresAt        DateTime?
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
 }
 
 model Invitation {
@@ -481,16 +500,26 @@ enum PostStatus {
 }
 
 enum CoachingSessionStatus {
+  PENDING_PAYMENT
   PENDING
   APPROVED
   UPCOMING
   COMPLETED
+  EXPIRED
 }
 
 enum ApprovalRequestStatus {
   PENDING
   APPROVED
   REJECTED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  CANCELED
+  EXPIRED
 }
 
 enum OTPPurpose {
