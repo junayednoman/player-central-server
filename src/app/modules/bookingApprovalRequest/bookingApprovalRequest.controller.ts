@@ -29,7 +29,21 @@ const updateStatus = handleAsyncRequest(async (req: TRequest, res: Response) => 
   });
 });
 
+const createPaymentIntent = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await bookingApprovalRequestServices.createPaymentIntent(
+      req.user?.id as string,
+      req.params.requestId as string
+    );
+    sendResponse(res, {
+      message: "Payment intent created successfully!",
+      data: result,
+    });
+  }
+);
+
 export const bookingApprovalRequestController = {
   getAll,
+  createPaymentIntent,
   updateStatus,
 };

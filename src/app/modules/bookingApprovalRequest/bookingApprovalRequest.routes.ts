@@ -13,6 +13,12 @@ router.get(
   bookingApprovalRequestController.getAll
 );
 
+router.post(
+  "/:requestId/payment-intent",
+  authorize(UserRole.PARENT),
+  bookingApprovalRequestController.createPaymentIntent
+);
+
 router.put(
   "/:requestId/status",
   authorize(UserRole.PARENT),

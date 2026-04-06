@@ -333,18 +333,34 @@ const confirmPayment = async (bookingId: string, payerAuthId: string) => {
     throw new ApiError(400, "Payment not completed");
   }
 
+  const approvalRequest = await prisma.bookingApprovalRequest.findFirst({
+    where: { bookingId },
+    select: { id: true },
+  });
+
   await prisma.$transaction(async tx => {
     await tx.payment.update({
       where: { bookingId },
       data: { status: "SUCCEEDED" },
     });
-    await tx.sessionBooking.update({
-      where: { id: bookingId },
-      data: { status: "APPROVED", reservedUntil: null },
-    });
+
+    if (approvalRequest) {
+      await tx.sessionBooking.update({
+        where: { id: bookingId },
+        data: { status: "PENDING", reservedUntil: null },
+      });
+    } else {
+      await tx.sessionBooking.update({
+        where: { id: bookingId },
+        data: { status: "APPROVED", reservedUntil: null },
+      });
+    }
   });
 
-  return { status: "APPROVED" };
+  return {
+    status: approvalRequest ? "PENDING" : "APPROVED",
+    paymentConfirmed: true,
+  };
 };
 
 const getAll = async (
