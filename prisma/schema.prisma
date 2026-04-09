@@ -379,6 +379,9 @@ model PlayerShortlist {
   scout        Auth   @relation("ScoutShortlists", fields: [scoutAuthId], references: [id])
   playerAuthId String
   player       Auth   @relation("PlayerShortlists", fields: [playerAuthId], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@unique([scoutAuthId, playerAuthId])
 }
 
 model BookingApprovalRequest {

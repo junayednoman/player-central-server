@@ -21,6 +21,7 @@ import {
   subscriptionRoutes,
 } from "../modules/subscription/subscription.routes";
 import { premiumPostRoutes } from "../modules/premiumPost/premiumPost.routes";
+import { shortlistRoutes } from "../modules/shortlist/shortlist.routes";
 
 const router = Router();
 
@@ -46,6 +47,7 @@ const routes = [
   { path: "/subscription-plans", route: subscriptionPlanRoutes },
   { path: "/subscriptions", route: subscriptionRoutes },
   { path: "/premium-post-config", route: premiumPostRoutes },
+  { path: "/shortlists", route: shortlistRoutes },
 ];
 
 routes.forEach(route => {
