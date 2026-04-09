@@ -16,6 +16,11 @@ import { postApprovalRequestRoutes } from "../modules/postApprovalRequest/postAp
 import { challengeApprovalRequestRoutes } from "../modules/challengeApprovalRequest/challengeApprovalRequest.routes";
 import { parentRoutes } from "../modules/parent/parent.routes";
 import { bookingApprovalRequestRoutes } from "../modules/bookingApprovalRequest/bookingApprovalRequest.routes";
+import {
+  subscriptionPlanRoutes,
+  subscriptionRoutes,
+} from "../modules/subscription/subscription.routes";
+import { premiumPostRoutes } from "../modules/premiumPost/premiumPost.routes";
 
 const router = Router();
 
@@ -38,6 +43,9 @@ const routes = [
   { path: "/challenge-approval-requests", route: challengeApprovalRequestRoutes },
   { path: "/parents", route: parentRoutes },
   { path: "/booking-approval-requests", route: bookingApprovalRequestRoutes },
+  { path: "/subscription-plans", route: subscriptionPlanRoutes },
+  { path: "/subscriptions", route: subscriptionRoutes },
+  { path: "/premium-post-config", route: premiumPostRoutes },
 ];
 
 routes.forEach(route => {

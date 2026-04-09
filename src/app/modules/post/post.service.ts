@@ -14,6 +14,10 @@ import {
   TUpdatePost,
 } from "./post.validation";
 import { getAge } from "../../utils/common.utils";
+import {
+  createStripePaymentIntent,
+  retrieveStripePaymentIntent,
+} from "../../utils/stripe";
 
 const create = async (
   playerAuthId: string,
@@ -27,15 +31,62 @@ const create = async (
     select: { dob: true },
   });
   const isMinor = playerProfile?.dob ? getAge(playerProfile.dob) < 18 : false;
+  const isPremium = payload.type === "PREMIUM";
 
   const post = await prisma.post.create({
     data: {
       playerAuthId,
       video: videoUrl,
-      status: isMinor ? "PENDING" : "APPROVED",
+      status: isPremium ? "PENDING_PAYMENT" : isMinor ? "PENDING" : "APPROVED",
       ...payload,
     },
   });
+
+  if (isPremium) {
+    const premiumPostConfig = await prisma.premiumPostConfig.findFirst({
+      where: { isActive: true },
+      orderBy: { createdAt: "desc" },
+    });
+    if (!premiumPostConfig) {
+      throw new ApiError(400, "Premium post config is not set");
+    }
+
+    const amount = premiumPostConfig.price;
+    const currency = premiumPostConfig.currency;
+    const intent = await createStripePaymentIntent(
+      Math.round(amount * 100),
+      currency,
+      {
+        postId: post.id,
+        payerAuthId: playerAuthId,
+      }
+    );
+
+    await prisma.payment.create({
+      data: {
+        postId: post.id,
+        payerAuthId: playerAuthId,
+        type: "POST",
+        amount,
+        currency,
+        provider: "stripe",
+        providerIntentId: intent.id,
+        status: "PENDING",
+      },
+    });
+
+    return {
+      requiresPayment: true,
+      requiresApproval: false,
+      post,
+      payment: {
+        paymentIntentId: intent.id,
+        clientSecret: intent.client_secret,
+        amount,
+        currency,
+      },
+    };
+  }
 
   if (isMinor) {
     await prisma.postApprovalRequest.create({
@@ -48,6 +99,83 @@ const create = async (
   }
 
   return post;
+};
+
+const confirmPayment = async (postId: string, payerAuthId: string) => {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: {
+      id: true,
+      playerAuthId: true,
+      status: true,
+    },
+  });
+
+  if (!post) throw new ApiError(404, "Post not found");
+  if (post.playerAuthId !== payerAuthId)
+    throw new ApiError(403, "Unauthorized");
+  if (post.status !== "PENDING_PAYMENT") {
+    throw new ApiError(400, "Post is not awaiting payment");
+  }
+
+  const payment = await prisma.payment.findUnique({
+    where: { postId },
+  });
+
+  if (!payment?.providerIntentId) {
+    throw new ApiError(404, "Payment intent not found");
+  }
+
+  const intent = await retrieveStripePaymentIntent(payment.providerIntentId);
+  if (intent.status !== "succeeded") {
+    throw new ApiError(400, "Payment not completed");
+  }
+
+  const playerProfile = await prisma.playerProfile.findUnique({
+    where: { authId: post.playerAuthId },
+    select: { dob: true },
+  });
+  const isMinor = playerProfile?.dob ? getAge(playerProfile.dob) < 18 : false;
+
+  await prisma.$transaction(async tx => {
+    await tx.payment.update({
+      where: { postId },
+      data: { status: "SUCCEEDED" },
+    });
+
+    if (isMinor) {
+      await tx.post.update({
+        where: { id: postId },
+        data: { status: "PENDING" },
+      });
+
+      const existingApproval = await tx.postApprovalRequest.findFirst({
+        where: { postId },
+        select: { id: true },
+      });
+
+      if (!existingApproval) {
+        await tx.postApprovalRequest.create({
+          data: {
+            playerAuthId: post.playerAuthId,
+            postId,
+            status: "PENDING",
+          },
+        });
+      }
+    } else {
+      await tx.post.update({
+        where: { id: postId },
+        data: { status: "APPROVED" },
+      });
+    }
+  });
+
+  return {
+    paymentConfirmed: true,
+    status: isMinor ? "PENDING" : "APPROVED",
+    requiresApproval: isMinor,
+  };
 };
 
 const getAll = async (options: TPaginationOptions, userId?: string) => {
@@ -245,6 +373,7 @@ const toggleReaction = async (
 
 export const postServices = {
   create,
+  confirmPayment,
   getAll,
   update,
   remove,

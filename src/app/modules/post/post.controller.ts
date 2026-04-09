@@ -28,6 +28,19 @@ const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
+const confirmPayment = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await postServices.confirmPayment(
+      req.params.postId as string,
+      req.user?.id as string
+    );
+    sendResponse(res, {
+      message: "Post payment confirmed successfully!",
+      data: result,
+    });
+  }
+);
+
 const update = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await postServices.update(
     req.params.postId as string,
@@ -119,6 +132,7 @@ const toggleReaction = handleAsyncRequest(
 export const postController = {
   create,
   getAll,
+  confirmPayment,
   update,
   remove,
   share,

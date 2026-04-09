@@ -37,7 +37,8 @@ const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
     },
     skip,
     take,
-    orderBy: sortBy && orderBy ? { [sortBy]: orderBy } : { requestedAt: "desc" },
+    orderBy:
+      sortBy && orderBy ? { [sortBy]: orderBy } : { requestedAt: "desc" },
   });
 
   const total = await prisma.bookingApprovalRequest.count({
@@ -50,16 +51,12 @@ const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
   };
 };
 
-const createPaymentIntent = async (
-  parentAuthId: string,
-  requestId: string
-) => {
+const createPaymentIntent = async (parentAuthId: string, requestId: string) => {
   const request = await prisma.bookingApprovalRequest.findUnique({
     where: { id: requestId },
     include: { booking: true },
   });
-  if (!request)
-    throw new ApiError(404, "Booking approval request not found");
+  if (!request) throw new ApiError(404, "Booking approval request not found");
 
   const isParent = await prisma.child.findFirst({
     where: {
@@ -84,10 +81,12 @@ const createPaymentIntent = async (
 
   const totalAmount =
     amount?.amount ??
-    (await prisma.coachProfile.findUnique({
-      where: { authId: request.booking.coachAuthId },
-      select: { price: true },
-    }))?.price ??
+    (
+      await prisma.coachProfile.findUnique({
+        where: { authId: request.booking.coachAuthId },
+        select: { price: true },
+      })
+    )?.price ??
     0;
 
   const durationHours =
@@ -108,6 +107,7 @@ const createPaymentIntent = async (
     where: { bookingId: request.bookingId },
     update: {
       payerAuthId: parentAuthId,
+      type: "BOOKING",
       amount: finalAmount,
       currency: "usd",
       provider: "stripe",
@@ -118,6 +118,7 @@ const createPaymentIntent = async (
     create: {
       bookingId: request.bookingId,
       payerAuthId: parentAuthId,
+      type: "BOOKING",
       amount: finalAmount,
       currency: "usd",
       provider: "stripe",
@@ -151,8 +152,7 @@ const updateStatus = async (
     where: { id: requestId },
     include: { booking: true },
   });
-  if (!request)
-    throw new ApiError(404, "Booking approval request not found");
+  if (!request) throw new ApiError(404, "Booking approval request not found");
 
   const isParent = await prisma.child.findFirst({
     where: {

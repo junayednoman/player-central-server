@@ -4,8 +4,15 @@ import cookieParser from "cookie-parser";
 import router from "./routes";
 import globalErrorHandler from "./middlewares/globalErrorHandler";
 import routeNotFoundHandler from "./middlewares/routeNotFoundHandler";
+import { subscriptionController } from "./modules/subscription/subscription.controller";
 
 const app: Application = express();
+
+app.post(
+  "/api/v1/subscriptions/webhook/stripe",
+  express.raw({ type: "application/json" }),
+  subscriptionController.handleStripeWebhook
+);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

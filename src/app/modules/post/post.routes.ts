@@ -24,6 +24,12 @@ router.post(
 
 router.get("/", authorize({ optional: true }), postController.getAll);
 
+router.post(
+  "/:postId/confirm-payment",
+  authorize(UserRole.PLAYER),
+  postController.confirmPayment
+);
+
 router.put(
   "/:postId",
   authorize(UserRole.PLAYER),

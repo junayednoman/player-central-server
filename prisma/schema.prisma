@@ -28,6 +28,7 @@ model Auth {
   comments                   Comment[]
   postShares                 PostShare[]
   payments                   Payment[]
+  subscription               Subscription?
   coachAvailabilityBlocks    CoachAvailabilityBlock[]   @relation("CoachAvailabilityBlocks")
   coachChallenges            Challenge[]                @relation("CoachChallenges")
   coachSessionBookings       SessionBooking[]           @relation("CoachSessionBookings")
@@ -238,18 +239,58 @@ model CustomSessionBooking {
 
 model Payment {
   id               String          @id @default(uuid())
-  bookingId        String          @unique
-  booking          SessionBooking  @relation(fields: [bookingId], references: [id])
+  bookingId        String?         @unique
+  booking          SessionBooking? @relation(fields: [bookingId], references: [id])
+  postId           String?         @unique
+  post             Post?           @relation("PostPayments", fields: [postId], references: [id])
+  subscriptionId   String?
+  subscription     Subscription?   @relation(fields: [subscriptionId], references: [id])
   payerAuthId      String
   payer            Auth            @relation(fields: [payerAuthId], references: [id])
+  type             PaymentType
   amount           Float
   currency         String          @default("usd")
   provider         String          @default("stripe")
   providerIntentId String?
+  providerInvoiceId String?        @unique
   status           PaymentStatus   @default(PENDING)
   expiresAt        DateTime?
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
+}
+
+model SubscriptionPlan {
+  id              String               @id @default(uuid())
+  role            UserRole
+  name            String
+  price           Float
+  currency        String               @default("usd")
+  interval        SubscriptionInterval @default(MONTHLY)
+  features        String[]
+  isActive        Boolean              @default(true)
+  stripeProductId String?
+  stripePriceId   String?
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  subscriptions   Subscription[]
+}
+
+model Subscription {
+  id                     String             @id @default(uuid())
+  authId                 String             @unique
+  auth                   Auth               @relation(fields: [authId], references: [id])
+  planId                 String
+  plan                   SubscriptionPlan   @relation(fields: [planId], references: [id])
+  status                 SubscriptionStatus
+  provider               String             @default("stripe")
+  providerCustomerId     String?
+  providerSubscriptionId String?            @unique
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+  payments               Payment[]
 }
 
 model Invitation {
@@ -283,6 +324,7 @@ model Post {
   reactions        Reaction[]
   comments         Comment[]
   shares           PostShare[]
+  payment          Payment?               @relation("PostPayments")
 }
 
 model Reaction {
@@ -411,6 +453,16 @@ model Legal {
   @@map("legal")
 }
 
+model PremiumPostConfig {
+  id        String   @id @default(uuid())
+  price     Float
+  currency  String   @default("usd")
+  features  String[]
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum UserStatus {
   PENDING
   ACTIVE
@@ -495,6 +547,7 @@ enum PostType {
 }
 
 enum PostStatus {
+  PENDING_PAYMENT
   PENDING
   APPROVED
 }
@@ -518,6 +571,24 @@ enum PaymentStatus {
   PENDING
   SUCCEEDED
   FAILED
+  CANCELED
+  EXPIRED
+}
+
+enum PaymentType {
+  BOOKING
+  POST
+  SUBSCRIPTION
+}
+
+enum SubscriptionInterval {
+  MONTHLY
+}
+
+enum SubscriptionStatus {
+  INCOMPLETE
+  ACTIVE
+  PAST_DUE
   CANCELED
   EXPIRED
 }

@@ -77,6 +77,11 @@ const updateStatus = async (
         data: { status: "APPROVED" },
       });
     } else if (payload.status === "REJECTED") {
+      await tx.payment.updateMany({
+        where: { postId: request.postId },
+        data: { postId: null },
+      });
+
       await tx.post.delete({
         where: { id: request.postId },
       });

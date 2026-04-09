@@ -278,6 +278,7 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
     data: {
       bookingId: booking.id,
       payerAuthId: playerAuthId,
+      type: "BOOKING",
       amount: totalAmount,
       currency,
       provider: "stripe",
