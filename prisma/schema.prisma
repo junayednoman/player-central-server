@@ -52,7 +52,9 @@ model Auth {
   challengeSubmissions       ChallengeSubmission[]      @relation("ChallengeSubmissions")
   challengeReactions         ChallengeReaction[]        @relation("ChallengeReactions")
   challengeComments          ChallengeComment[]         @relation("ChallengeComments")
-  supportMessages           SupportMessage[]
+  supportMessages            SupportMessage[]
+  conversationParticipants   ConversationParticipant[]
+  sentMessages               Message[]                  @relation("MessageSender")
 
   @@map("auth")
 }
@@ -476,6 +478,41 @@ model SupportMessage {
   createdAt   DateTime @default(now())
 }
 
+model Conversation {
+  id            String                    @id @default(uuid())
+  lastMessageAt DateTime                  @default(now())
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  participants  ConversationParticipant[]
+  messages      Message[]
+}
+
+model ConversationParticipant {
+  id             String        @id @default(uuid())
+  conversationId String
+  conversation   Conversation  @relation(fields: [conversationId], references: [id])
+  authId         String
+  auth           Auth          @relation(fields: [authId], references: [id])
+  lastReadAt     DateTime?
+  isArchived     Boolean       @default(false)
+  isMuted        Boolean       @default(false)
+  createdAt      DateTime      @default(now())
+
+  @@unique([conversationId, authId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderAuthId   String
+  sender         Auth         @relation("MessageSender", fields: [senderAuthId], references: [id])
+  text           String
+  type           MessageType  @default(TEXT)
+  isDeleted      Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
 enum UserStatus {
   PENDING
   ACTIVE
@@ -604,6 +641,10 @@ enum SubscriptionStatus {
   PAST_DUE
   CANCELED
   EXPIRED
+}
+
+enum MessageType {
+  TEXT
 }
 
 enum OTPPurpose {

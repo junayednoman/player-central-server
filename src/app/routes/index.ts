@@ -24,6 +24,7 @@ import { premiumPostRoutes } from "../modules/premiumPost/premiumPost.routes";
 import { shortlistRoutes } from "../modules/shortlist/shortlist.routes";
 import { invitationRoutes } from "../modules/invitation/invitation.routes";
 import { supportRoutes } from "../modules/support/support.routes";
+import { chatRoutes } from "../modules/chat/chat.routes";
 
 const router = Router();
 
@@ -52,6 +53,7 @@ const routes = [
   { path: "/shortlists", route: shortlistRoutes },
   { path: "/invitations", route: invitationRoutes },
   { path: "/support-messages", route: supportRoutes },
+  { path: "/chat", route: chatRoutes },
 ];
 
 routes.forEach(route => {
