@@ -52,6 +52,7 @@ model Auth {
   challengeSubmissions       ChallengeSubmission[]      @relation("ChallengeSubmissions")
   challengeReactions         ChallengeReaction[]        @relation("ChallengeReactions")
   challengeComments          ChallengeComment[]         @relation("ChallengeComments")
+  supportMessages           SupportMessage[]
 
   @@map("auth")
 }
@@ -464,6 +465,15 @@ model PremiumPostConfig {
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model SupportMessage {
+  id          String   @id @default(uuid())
+  senderAuthId String
+  sender      Auth     @relation(fields: [senderAuthId], references: [id])
+  subject     String
+  description String
+  createdAt   DateTime @default(now())
 }
 
 enum UserStatus {

@@ -23,6 +23,7 @@ import {
 import { premiumPostRoutes } from "../modules/premiumPost/premiumPost.routes";
 import { shortlistRoutes } from "../modules/shortlist/shortlist.routes";
 import { invitationRoutes } from "../modules/invitation/invitation.routes";
+import { supportRoutes } from "../modules/support/support.routes";
 
 const router = Router();
 
@@ -50,6 +51,7 @@ const routes = [
   { path: "/premium-post-config", route: premiumPostRoutes },
   { path: "/shortlists", route: shortlistRoutes },
   { path: "/invitations", route: invitationRoutes },
+  { path: "/support-messages", route: supportRoutes },
 ];
 
 routes.forEach(route => {
