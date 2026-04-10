@@ -42,6 +42,44 @@ const searchParents = async (email: string, options: TPaginationOptions) => {
   };
 };
 
+type TUpdateChildAccessPayload = {
+  whoCanComment?: "EVERYONE" | "COACH" | "SCOUT";
+  whoCanFollow?: "EVERYONE" | "COACH" | "SCOUT";
+};
+
+const updateChildAccess = async (
+  parentAuthId: string,
+  childId: string,
+  payload: TUpdateChildAccessPayload
+) => {
+  const child = await prisma.child.findFirst({
+    where: {
+      id: childId,
+      parentAuthIds: {
+        has: parentAuthId,
+      },
+    },
+    select: {
+      id: true,
+    },
+  });
+
+  if (!child) {
+    throw new ApiError(404, "Child not found for this parent");
+  }
+
+  return prisma.child.update({
+    where: {
+      id: childId,
+    },
+    data: {
+      ...(payload.whoCanComment && { whoCanComment: payload.whoCanComment }),
+      ...(payload.whoCanFollow && { whoCanFollow: payload.whoCanFollow }),
+    },
+  });
+};
+
 export const parentServices = {
   searchParents,
+  updateChildAccess,
 };

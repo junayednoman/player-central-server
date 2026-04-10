@@ -10,9 +10,7 @@ let io: SocketIOServer;
 const getTokenFromSocket = (socket: Socket) => {
   const authToken = socket.handshake.auth?.token as string | undefined;
   if (authToken) {
-    return authToken.startsWith("Bearer ")
-      ? authToken.slice(7)
-      : authToken;
+    return authToken.startsWith("Bearer ") ? authToken.slice(7) : authToken;
   }
 
   const headerToken = socket.handshake.headers.authorization;
@@ -83,9 +81,10 @@ export const initSocket = (server: HttpServer) => {
             message
           );
 
-          const participantIds = await chatServices.getConversationParticipantIds(
-            payload.conversationId
-          );
+          const participantIds =
+            await chatServices.getConversationParticipantIds(
+              payload.conversationId
+            );
 
           participantIds.forEach(participantId => {
             io.to(`user:${participantId}`).emit("chat:conversation:update", {
@@ -106,13 +105,12 @@ export const initSocket = (server: HttpServer) => {
       async (payload: { conversationId: string }) => {
         try {
           await chatServices.ensureParticipant(payload.conversationId, user.id);
-          socket.to(`conversation:${payload.conversationId}`).emit(
-            "chat:typing:start",
-            {
+          socket
+            .to(`conversation:${payload.conversationId}`)
+            .emit("chat:typing:start", {
               conversationId: payload.conversationId,
               authId: user.id,
-            }
-          );
+            });
         } catch (_error) {
           socket.emit("chat:error", {
             message: "Unable to update typing status",
@@ -126,13 +124,12 @@ export const initSocket = (server: HttpServer) => {
       async (payload: { conversationId: string }) => {
         try {
           await chatServices.ensureParticipant(payload.conversationId, user.id);
-          socket.to(`conversation:${payload.conversationId}`).emit(
-            "chat:typing:stop",
-            {
+          socket
+            .to(`conversation:${payload.conversationId}`)
+            .emit("chat:typing:stop", {
               conversationId: payload.conversationId,
               authId: user.id,
-            }
-          );
+            });
         } catch (_error) {
           socket.emit("chat:error", {
             message: "Unable to update typing status",
@@ -143,7 +140,10 @@ export const initSocket = (server: HttpServer) => {
 
     socket.on("chat:mark-read", async (payload: { conversationId: string }) => {
       try {
-        await chatServices.markConversationRead(payload.conversationId, user.id);
+        await chatServices.markConversationRead(
+          payload.conversationId,
+          user.id
+        );
         io.to(`conversation:${payload.conversationId}`).emit("chat:read", {
           conversationId: payload.conversationId,
           authId: user.id,

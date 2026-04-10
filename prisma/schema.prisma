@@ -241,25 +241,25 @@ model CustomSessionBooking {
 }
 
 model Payment {
-  id               String          @id @default(uuid())
-  bookingId        String?         @unique
-  booking          SessionBooking? @relation(fields: [bookingId], references: [id])
-  postId           String?         @unique
-  post             Post?           @relation("PostPayments", fields: [postId], references: [id])
-  subscriptionId   String?
-  subscription     Subscription?   @relation(fields: [subscriptionId], references: [id])
-  payerAuthId      String
-  payer            Auth            @relation(fields: [payerAuthId], references: [id])
-  type             PaymentType
-  amount           Float
-  currency         String          @default("usd")
-  provider         String          @default("stripe")
-  providerIntentId String?
-  providerInvoiceId String?        @unique
-  status           PaymentStatus   @default(PENDING)
-  expiresAt        DateTime?
-  createdAt        DateTime        @default(now())
-  updatedAt        DateTime        @updatedAt
+  id                String          @id @default(uuid())
+  bookingId         String?         @unique
+  booking           SessionBooking? @relation(fields: [bookingId], references: [id])
+  postId            String?         @unique
+  post              Post?           @relation("PostPayments", fields: [postId], references: [id])
+  subscriptionId    String?
+  subscription      Subscription?   @relation(fields: [subscriptionId], references: [id])
+  payerAuthId       String
+  payer             Auth            @relation(fields: [payerAuthId], references: [id])
+  type              PaymentType
+  amount            Float
+  currency          String          @default("usd")
+  provider          String          @default("stripe")
+  providerIntentId  String?
+  providerInvoiceId String?         @unique
+  status            PaymentStatus   @default(PENDING)
+  expiresAt         DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
 }
 
 model SubscriptionPlan {
@@ -327,7 +327,7 @@ model Post {
   reactions        Reaction[]
   comments         Comment[]
   shares           PostShare[]
-  payment          Payment?               @relation("PostPayments")
+  payment          Payment?              @relation("PostPayments")
 }
 
 model Reaction {
@@ -377,11 +377,11 @@ model PlayerBookmark {
 }
 
 model PlayerShortlist {
-  id           String @id @default(uuid())
+  id           String   @id @default(uuid())
   scoutAuthId  String
-  scout        Auth   @relation("ScoutShortlists", fields: [scoutAuthId], references: [id])
+  scout        Auth     @relation("ScoutShortlists", fields: [scoutAuthId], references: [id])
   playerAuthId String
-  player       Auth   @relation("PlayerShortlists", fields: [playerAuthId], references: [id])
+  player       Auth     @relation("PlayerShortlists", fields: [playerAuthId], references: [id])
   createdAt    DateTime @default(now())
 
   @@unique([scoutAuthId, playerAuthId])
@@ -430,12 +430,14 @@ model Review {
 }
 
 model Child {
-  id            String            @id @default(uuid())
-  playerAuthId  String
-  player        Auth              @relation("PlayerChildren", fields: [playerAuthId], references: [id])
-  parentAuthIds String[]
-  relationship  ChildRelationShip
-  status        ChildStatus
+  id             String             @id @default(uuid())
+  playerAuthId   String
+  player         Auth               @relation("PlayerChildren", fields: [playerAuthId], references: [id])
+  parentAuthIds  String[]
+  relationship   ChildRelationShip
+  status         ChildStatus
+  whoCanComment  ChildAccessScope   @default(EVERYONE)
+  whoCanFollow   ChildAccessScope   @default(EVERYONE)
 }
 
 model Notification {
@@ -470,12 +472,12 @@ model PremiumPostConfig {
 }
 
 model SupportMessage {
-  id          String   @id @default(uuid())
+  id           String   @id @default(uuid())
   senderAuthId String
-  sender      Auth     @relation(fields: [senderAuthId], references: [id])
-  subject     String
-  description String
-  createdAt   DateTime @default(now())
+  sender       Auth     @relation(fields: [senderAuthId], references: [id])
+  subject      String
+  description  String
+  createdAt    DateTime @default(now())
 }
 
 model Conversation {
@@ -488,15 +490,15 @@ model Conversation {
 }
 
 model ConversationParticipant {
-  id             String        @id @default(uuid())
+  id             String       @id @default(uuid())
   conversationId String
-  conversation   Conversation  @relation(fields: [conversationId], references: [id])
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
   authId         String
-  auth           Auth          @relation(fields: [authId], references: [id])
+  auth           Auth         @relation(fields: [authId], references: [id])
   lastReadAt     DateTime?
-  isArchived     Boolean       @default(false)
-  isMuted        Boolean       @default(false)
-  createdAt      DateTime      @default(now())
+  isArchived     Boolean      @default(false)
+  isMuted        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
 
   @@unique([conversationId, authId])
 }
@@ -583,6 +585,12 @@ enum ChildRelationShip {
 enum ChildStatus {
   PENDING
   APPROVED
+}
+
+enum ChildAccessScope {
+  EVERYONE
+  COACH
+  SCOUT
 }
 
 enum ChallengeDifficulty {
