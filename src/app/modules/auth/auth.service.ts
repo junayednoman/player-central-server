@@ -345,6 +345,14 @@ const getAll = async (
   query: Record<string, any>
 ) => {
   const andConditions: Prisma.AuthWhereInput[] = [];
+  const requestedRoles = Array.isArray(query.role)
+    ? query.role
+    : typeof query.role === "string"
+      ? query.role
+          .split(",")
+          .map((role: string) => role.trim())
+          .filter(Boolean)
+      : [];
 
   andConditions.push({
     OR: [
@@ -378,9 +386,12 @@ const getAll = async (
       ],
     });
   }
-  if (query.role) {
+
+  if (requestedRoles.length > 0) {
     andConditions.push({
-      role: query.role,
+      role: {
+        in: requestedRoles,
+      },
     });
   }
 
@@ -392,12 +403,11 @@ const getAll = async (
     where: whereConditions,
     select: {
       id: true,
+      email: true,
       role: true,
-      status: true,
       createdAt: true,
       profile: {
         select: {
-          id: true,
           name: true,
           image: true,
         },
