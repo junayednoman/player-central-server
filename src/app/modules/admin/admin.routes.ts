@@ -10,6 +10,11 @@ const router = Router();
 
 router.get("/profile", authorize(UserRole.ADMIN), adminController.getProfile);
 router.get("/stats", authorize(UserRole.ADMIN), adminController.getDashboardStats);
+router.get(
+  "/earnings",
+  authorize(UserRole.ADMIN),
+  adminController.getEarningStats
+);
 router.patch(
   "/",
   authorize(UserRole.ADMIN),

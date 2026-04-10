@@ -3,7 +3,10 @@ import handleAsyncRequest from "../../utils/handleAsyncRequest";
 import { sendResponse } from "../../utils/sendResponse";
 import { adminServices } from "./admin.service";
 import { Response } from "express";
-import { dashboardStatsQueryZod } from "./admin.validation";
+import {
+  dashboardStatsQueryZod,
+  earningStatsQueryZod,
+} from "./admin.validation";
 
 const getProfile = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await adminServices.getProfile(req.user?.id as string);
@@ -39,8 +42,21 @@ const getDashboardStats = handleAsyncRequest(
   }
 );
 
+const getEarningStats = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const query = earningStatsQueryZod.parse(req.query);
+    const result = await adminServices.getEarningStats(query);
+
+    sendResponse(res, {
+      message: "Earning stats fetched successfully!",
+      data: result,
+    });
+  }
+);
+
 export const adminController = {
   getProfile,
   updateProfile,
   getDashboardStats,
+  getEarningStats,
 };
