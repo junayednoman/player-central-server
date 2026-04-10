@@ -55,6 +55,7 @@ model Auth {
   supportMessages            SupportMessage[]
   conversationParticipants   ConversationParticipant[]
   sentMessages               Message[]                  @relation("MessageSender")
+  reports                    Report[]                   @relation("ReporterReports")
 
   @@map("auth")
 }
@@ -174,6 +175,7 @@ model Challenge {
   submissions      ChallengeSubmission[]
   reactions        ChallengeReaction[]
   comments         ChallengeComment[]
+  reports          Report[]
 }
 
 model ChallengeSubmission {
@@ -328,6 +330,7 @@ model Post {
   comments         Comment[]
   shares           PostShare[]
   payment          Payment?              @relation("PostPayments")
+  reports          Report[]
 }
 
 model Reaction {
@@ -478,6 +481,22 @@ model SupportMessage {
   subject      String
   description  String
   createdAt    DateTime @default(now())
+}
+
+model Report {
+  id            String            @id @default(uuid())
+  reporterAuthId String
+  reporter      Auth              @relation("ReporterReports", fields: [reporterAuthId], references: [id])
+  reason        String
+  contentType   ReportContentType
+  postId        String?
+  post          Post?             @relation(fields: [postId], references: [id])
+  challengeId   String?
+  challenge     Challenge?        @relation(fields: [challengeId], references: [id])
+  createdAt     DateTime          @default(now())
+
+  @@unique([reporterAuthId, postId])
+  @@unique([reporterAuthId, challengeId])
 }
 
 model Conversation {
@@ -653,6 +672,12 @@ enum SubscriptionStatus {
 
 enum MessageType {
   TEXT
+}
+
+enum ReportContentType {
+  COMMUNITY_POST
+  PREMIUM_POST
+  CHALLENGE
 }
 
 enum OTPPurpose {
