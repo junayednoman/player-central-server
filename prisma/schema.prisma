@@ -113,6 +113,7 @@ model CoachProfile {
   location     String
   teams        String[]
   certificate  String
+  intro        String?
   price        Float
   sessionTypes CoachSessionType[]
   mode         CoachSessionMode
@@ -433,14 +434,14 @@ model Review {
 }
 
 model Child {
-  id             String             @id @default(uuid())
-  playerAuthId   String
-  player         Auth               @relation("PlayerChildren", fields: [playerAuthId], references: [id])
-  parentAuthIds  String[]
-  relationship   ChildRelationShip
-  status         ChildStatus
-  whoCanComment  ChildAccessScope   @default(EVERYONE)
-  whoCanFollow   ChildAccessScope   @default(EVERYONE)
+  id            String            @id @default(uuid())
+  playerAuthId  String
+  player        Auth              @relation("PlayerChildren", fields: [playerAuthId], references: [id])
+  parentAuthIds String[]
+  relationship  ChildRelationShip
+  status        ChildStatus
+  whoCanComment ChildAccessScope  @default(EVERYONE)
+  whoCanFollow  ChildAccessScope  @default(EVERYONE)
 }
 
 model Notification {
@@ -484,16 +485,16 @@ model SupportMessage {
 }
 
 model Report {
-  id            String            @id @default(uuid())
+  id             String            @id @default(uuid())
   reporterAuthId String
-  reporter      Auth              @relation("ReporterReports", fields: [reporterAuthId], references: [id])
-  reason        String
-  contentType   ReportContentType
-  postId        String?
-  post          Post?             @relation(fields: [postId], references: [id])
-  challengeId   String?
-  challenge     Challenge?        @relation(fields: [challengeId], references: [id])
-  createdAt     DateTime          @default(now())
+  reporter       Auth              @relation("ReporterReports", fields: [reporterAuthId], references: [id])
+  reason         String
+  contentType    ReportContentType
+  postId         String?
+  post           Post?             @relation(fields: [postId], references: [id])
+  challengeId    String?
+  challenge      Challenge?        @relation(fields: [challengeId], references: [id])
+  createdAt      DateTime          @default(now())
 
   @@unique([reporterAuthId, postId])
   @@unique([reporterAuthId, challengeId])

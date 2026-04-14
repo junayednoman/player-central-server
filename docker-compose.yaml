@@ -1,0 +1,28 @@
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: player-central-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: player-central
+    ports:
+      - "5432:5432"
+    networks:
+      - player-central-network
+    volumes:
+      - player-central-postgres-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+ 
+networks:
+  player-central-network:
+    name: player-central-network
+    driver: bridge
+ 
+volumes:
+  player-central-postgres-volume:

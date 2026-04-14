@@ -140,6 +140,7 @@ const signUp = async (payload: TSignup, file: TFile) => {
             location: payload.location,
             teams: payload.teams,
             certificate: payload.certificate,
+            intro: payload.intro,
             price: payload.price,
             sessionTypes: payload.sessionTypes,
             mode: payload.mode,
@@ -149,6 +150,7 @@ const signUp = async (payload: TSignup, file: TFile) => {
             location: payload.location,
             teams: payload.teams,
             certificate: payload.certificate,
+            intro: payload.intro,
             price: payload.price,
             sessionTypes: payload.sessionTypes,
             mode: payload.mode,
@@ -181,11 +183,13 @@ const signUp = async (payload: TSignup, file: TFile) => {
             organization: payload.organization,
             level: payload.level,
             badge: payload.badge,
+            intro: payload.intro,
           },
           update: {
             organization: payload.organization,
             level: payload.level,
             badge: payload.badge,
+            intro: payload.intro,
           },
         });
       }

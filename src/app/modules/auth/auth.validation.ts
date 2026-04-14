@@ -45,6 +45,7 @@ const coachSignupZod = z.object({
   location: z.string().min(1, "Location is required").trim(),
   teams: z.array(z.string().min(1)).nonempty("Teams are required"),
   certificate: z.string().min(1, "Certificate is required").trim(),
+  intro: z.string().optional(),
   price: z.number().nonnegative(),
   sessionTypes: z
     .array(z.nativeEnum(CoachSessionType))
@@ -61,6 +62,7 @@ const scoutSignupZod = z.object({
   organization: z.string().min(1, "Organization is required").trim(),
   level: z.nativeEnum(ScoutLevel),
   badge: z.string().min(1, "Badge is required").trim(),
+  intro: z.string().optional(),
 });
 
 const parentSignupZod = z.object({
