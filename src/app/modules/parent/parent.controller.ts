@@ -6,6 +6,29 @@ import pick from "../../utils/pick";
 import { parentServices } from "./parent.service";
 import ApiError from "../../classes/ApiError";
 
+const getMyProfile = handleAsyncRequest(async (req: TRequest, res: Response) => {
+  const result = await parentServices.getMyProfile(req.user!.id);
+  sendResponse(res, {
+    message: "Profile retrieved successfully!",
+    data: result,
+  });
+});
+
+const updateProfile = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await parentServices.updateProfile(
+      req.user!.id,
+      req.body,
+      req.file
+    );
+
+    sendResponse(res, {
+      message: "Profile updated successfully!",
+      data: result,
+    });
+  }
+);
+
 const searchParents = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
   const result = await parentServices.searchParents(
@@ -38,6 +61,8 @@ const updateChildAccess = handleAsyncRequest(
 );
 
 export const parentController = {
+  getMyProfile,
+  updateProfile,
   searchParents,
   updateChildAccess,
 };

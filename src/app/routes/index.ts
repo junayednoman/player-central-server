@@ -15,6 +15,7 @@ import { customSessionRoutes } from "../modules/customSession/customSession.rout
 import { postApprovalRequestRoutes } from "../modules/postApprovalRequest/postApprovalRequest.routes";
 import { challengeApprovalRequestRoutes } from "../modules/challengeApprovalRequest/challengeApprovalRequest.routes";
 import { parentRoutes } from "../modules/parent/parent.routes";
+import { scoutRoutes } from "../modules/scout/scout.routes";
 import { bookingApprovalRequestRoutes } from "../modules/bookingApprovalRequest/bookingApprovalRequest.routes";
 import {
   subscriptionPlanRoutes,
@@ -47,6 +48,7 @@ const routes = [
   { path: "/post-approval-requests", route: postApprovalRequestRoutes },
   { path: "/challenge-approval-requests", route: challengeApprovalRequestRoutes },
   { path: "/parents", route: parentRoutes },
+  { path: "/scouts", route: scoutRoutes },
   { path: "/booking-approval-requests", route: bookingApprovalRequestRoutes },
   { path: "/subscription-plans", route: subscriptionPlanRoutes },
   { path: "/subscriptions", route: subscriptionRoutes },

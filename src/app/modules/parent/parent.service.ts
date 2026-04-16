@@ -1,9 +1,12 @@
 import prisma from "../../utils/prisma";
 import ApiError from "../../classes/ApiError";
+import { deleteFromS3, uploadToS3 } from "../../utils/awss3";
+import { TFile } from "../../interface/file.interface";
 import {
   calculatePagination,
   TPaginationOptions,
 } from "../../utils/paginationCalculation";
+import { TUpdateParentProfile } from "./parent.validation";
 
 const searchParents = async (email: string, options: TPaginationOptions) => {
   if (!email) throw new ApiError(400, "Email query is required");
@@ -40,6 +43,111 @@ const searchParents = async (email: string, options: TPaginationOptions) => {
     meta: { page, limit: take, total },
     parents,
   };
+};
+
+const getMyProfile = async (authId: string) => {
+  const [parent, childCount] = await Promise.all([
+    prisma.parentProfile.findUnique({
+      where: { authId },
+      include: {
+        auth: {
+          select: {
+            profile: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.child.count({
+      where: {
+        parentAuthIds: {
+          has: authId,
+        },
+      },
+    }),
+  ]);
+
+  if (!parent) throw new ApiError(404, "Parent profile not found");
+
+  return {
+    ...parent,
+    hasChild: childCount > 0,
+  };
+};
+
+const updateProfile = async (
+  authId: string,
+  payload: TUpdateParentProfile,
+  file?: TFile
+) => {
+  const parentProfile = await prisma.parentProfile.findUnique({
+    where: { authId },
+    include: {
+      auth: {
+        select: {
+          profile: true,
+        },
+      },
+    },
+  });
+
+  if (!parentProfile) throw new ApiError(404, "Parent profile not found");
+
+  const imageUrl = file ? await uploadToS3(file) : undefined;
+
+  const result = await prisma.$transaction(async tx => {
+    if (payload.name || imageUrl) {
+      await tx.profile.update({
+        where: { authId },
+        data: {
+          ...(payload.name ? { name: payload.name } : {}),
+          ...(imageUrl ? { image: imageUrl } : {}),
+        },
+      });
+    }
+
+    const updatedParent = await tx.parentProfile.update({
+      where: { authId },
+      data: {
+        ...(payload.phone ? { phone: payload.phone } : {}),
+      },
+      include: {
+        auth: {
+          select: {
+            profile: {
+              select: {
+                name: true,
+                image: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const childCount = await tx.child.count({
+      where: {
+        parentAuthIds: {
+          has: authId,
+        },
+      },
+    });
+
+    return {
+      ...updatedParent,
+      hasChild: childCount > 0,
+    };
+  });
+
+  if (imageUrl && parentProfile.auth?.profile?.image) {
+    await deleteFromS3(parentProfile.auth.profile.image);
+  }
+
+  return result;
 };
 
 type TUpdateChildAccessPayload = {
@@ -81,5 +189,7 @@ const updateChildAccess = async (
 
 export const parentServices = {
   searchParents,
+  getMyProfile,
+  updateProfile,
   updateChildAccess,
 };
