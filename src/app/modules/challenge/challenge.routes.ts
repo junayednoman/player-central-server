@@ -21,6 +21,11 @@ router.post(
 );
 router.get("/", challengeController.getAll);
 router.get(
+  "/bookmarks/my",
+  authorize(UserRole.PLAYER),
+  challengeController.getMyBookmarkedChallenges
+);
+router.get(
   "/submissions/my",
   authorize(UserRole.COACH),
   challengeController.getCoachSubmissions
@@ -43,6 +48,11 @@ router.post(
   upload.single("video"),
   validate(submitChallengeZod, { formData: true }),
   challengeController.submit
+);
+router.post(
+  "/:challengeId/bookmark/toggle",
+  authorize(UserRole.PLAYER),
+  challengeController.toggleBookmark
 );
 
 export const challengeRoutes = router;

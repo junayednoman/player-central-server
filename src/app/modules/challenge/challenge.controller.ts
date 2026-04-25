@@ -28,6 +28,20 @@ const getAll = handleAsyncRequest(async (req: Request, res: Response) => {
   });
 });
 
+const getMyBookmarkedChallenges = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
+    const result = await challengeServices.getMyBookmarkedChallenges(
+      req.user?.id as string,
+      options
+    );
+    sendResponse(res, {
+      message: "Bookmarked challenges retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 const getSingle = handleAsyncRequest(async (req: Request, res: Response) => {
   const result = await challengeServices.getSingle(
     req.params.challengeId as string
@@ -75,6 +89,19 @@ const submit = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
+const toggleBookmark = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await challengeServices.toggleBookmark(
+      req.params.challengeId as string,
+      req.user?.id as string
+    );
+    sendResponse(res, {
+      message: "Challenge bookmark updated successfully!",
+      data: result,
+    });
+  }
+);
+
 const getCoachSubmissions = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
     const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
@@ -92,9 +119,11 @@ const getCoachSubmissions = handleAsyncRequest(
 export const challengeController = {
   create,
   getAll,
+  getMyBookmarkedChallenges,
   getSingle,
   update,
   remove,
   submit,
+  toggleBookmark,
   getCoachSubmissions,
 };

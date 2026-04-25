@@ -3,8 +3,6 @@ import { ChallengeDifficulty, PlayerPosition, PostType } from "@prisma/client";
 
 export const createPostZod = z.object({
   caption: z.string().min(1, "Caption is required").trim(),
-  position: z.nativeEnum(PlayerPosition),
-  difficultyType: z.nativeEnum(ChallengeDifficulty),
   type: z.nativeEnum(PostType),
 });
 

@@ -23,6 +23,12 @@ router.post(
 );
 
 router.get("/", authorize({ optional: true }), postController.getAll);
+router.get("/my", authorize(UserRole.PLAYER), postController.getMyPosts);
+router.get(
+  "/:postId/comments",
+  authorize({ optional: true }),
+  postController.getComments
+);
 
 router.post(
   "/:postId/confirm-payment",
@@ -38,11 +44,7 @@ router.put(
   postController.update
 );
 
-router.delete(
-  "/:postId",
-  authorize(UserRole.PLAYER),
-  postController.remove
-);
+router.delete("/:postId", authorize(UserRole.PLAYER), postController.remove);
 
 router.post("/:postId/share", authorize(), postController.share);
 

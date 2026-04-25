@@ -28,6 +28,31 @@ const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
+const getMyPosts = handleAsyncRequest(async (req: TRequest, res: Response) => {
+  const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
+  const result = await postServices.getMyPosts(
+    req.user?.id as string,
+    options
+  );
+  sendResponse(res, {
+    message: "My posts retrieved successfully!",
+    data: result,
+  });
+});
+
+const getComments = handleAsyncRequest(async (req: TRequest, res: Response) => {
+  const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
+  const result = await postServices.getComments(
+    req.params.postId as string,
+    options,
+    req.user?.id
+  );
+  sendResponse(res, {
+    message: "Comments retrieved successfully!",
+    data: result,
+  });
+});
+
 const confirmPayment = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
     const result = await postServices.confirmPayment(
@@ -132,6 +157,8 @@ const toggleReaction = handleAsyncRequest(
 export const postController = {
   create,
   getAll,
+  getMyPosts,
+  getComments,
   confirmPayment,
   update,
   remove,

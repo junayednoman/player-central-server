@@ -13,6 +13,14 @@ import {
   TUpdateChallenge,
 } from "./challenge.validation";
 
+const challengeBookmarkModel = (prisma as any).challengeBookmark as {
+  findUnique: (args: any) => Promise<any>;
+  delete: (args: any) => Promise<any>;
+  create: (args: any) => Promise<any>;
+  findMany: (args: any) => Promise<any[]>;
+  count: (args: any) => Promise<number>;
+};
+
 const create = async (
   coachAuthId: string,
   payload: TCreateChallenge,
@@ -260,6 +268,109 @@ const getCoachSubmissions = async (
   };
 };
 
+const toggleBookmark = async (challengeId: string, playerAuthId: string) => {
+  const [challenge, player] = await Promise.all([
+    prisma.challenge.findUnique({
+      where: { id: challengeId },
+      select: { id: true },
+    }),
+    prisma.auth.findUnique({
+      where: { id: playerAuthId },
+      select: { id: true, role: true },
+    }),
+  ]);
+
+  if (!challenge) throw new ApiError(404, "Challenge not found");
+  if (!player || player.role !== "PLAYER")
+    throw new ApiError(403, "Unauthorized");
+
+  const existing = await challengeBookmarkModel.findUnique({
+    where: {
+      challengeId_playerAuthId: {
+        challengeId,
+        playerAuthId,
+      },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await challengeBookmarkModel.delete({
+      where: { id: existing.id },
+    });
+
+    return { bookmarked: false };
+  }
+
+  await challengeBookmarkModel.create({
+    data: {
+      challengeId,
+      playerAuthId,
+    },
+  });
+
+  return { bookmarked: true };
+};
+
+const getMyBookmarkedChallenges = async (
+  playerAuthId: string,
+  options: TPaginationOptions
+) => {
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+  const safeSortBy = sortBy === "bookmarkedAt" ? "createdAt" : sortBy;
+
+  const bookmarks = await challengeBookmarkModel.findMany({
+    where: { playerAuthId },
+    include: {
+      challenge: {
+        include: {
+          coach: {
+            select: {
+              profile: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+          _count: {
+            select: {
+              submissions: true,
+              reactions: true,
+              comments: true,
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take,
+    orderBy: safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { createdAt: "desc" },
+  });
+
+  const total = await challengeBookmarkModel.count({
+    where: { playerAuthId },
+  });
+
+  return {
+    meta: {
+      page,
+      limit: take,
+      total,
+    },
+    challenges: bookmarks.map(bookmark => ({
+      ...bookmark.challenge,
+      submissionCount: bookmark.challenge._count.submissions,
+      reactionCount: bookmark.challenge._count.reactions,
+      commentCount: bookmark.challenge._count.comments,
+      isBookmarked: true,
+      bookmarkedAt: bookmark.createdAt,
+      _count: undefined,
+    })),
+  };
+};
+
 export const challengeServices = {
   create,
   getAll,
@@ -267,5 +378,7 @@ export const challengeServices = {
   update,
   remove,
   submit,
+  toggleBookmark,
+  getMyBookmarkedChallenges,
   getCoachSubmissions,
 };

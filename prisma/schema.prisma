@@ -52,6 +52,7 @@ model Auth {
   challengeSubmissions       ChallengeSubmission[]      @relation("ChallengeSubmissions")
   challengeReactions         ChallengeReaction[]        @relation("ChallengeReactions")
   challengeComments          ChallengeComment[]         @relation("ChallengeComments")
+  bookmarkedChallenges       ChallengeBookmark[]        @relation("ChallengeBookmarks")
   supportMessages            SupportMessage[]
   conversationParticipants   ConversationParticipant[]
   sentMessages               Message[]                  @relation("MessageSender")
@@ -176,7 +177,20 @@ model Challenge {
   submissions      ChallengeSubmission[]
   reactions        ChallengeReaction[]
   comments         ChallengeComment[]
+  bookmarks        ChallengeBookmark[]
   reports          Report[]
+}
+
+model ChallengeBookmark {
+  id          String    @id @default(uuid())
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  playerAuthId String
+  player      Auth      @relation("ChallengeBookmarks", fields: [playerAuthId], references: [id])
+  createdAt   DateTime  @default(now())
+
+  @@unique([challengeId, playerAuthId])
+  @@map("challenge_bookmark")
 }
 
 model ChallengeSubmission {
@@ -319,8 +333,6 @@ model Post {
   player           Auth                  @relation("PlayerPosts", fields: [playerAuthId], references: [id])
   caption          String
   video            String
-  position         PlayerPosition
-  difficultyType   ChallengeDifficulty
   type             PostType
   status           PostStatus
   shareCount       Int                   @default(0)

@@ -250,6 +250,138 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
   };
 };
 
+const getMyPosts = async (
+  playerAuthId: string,
+  options: TPaginationOptions
+) => {
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+
+  const posts = await prisma.post.findMany({
+    where: {
+      playerAuthId,
+    },
+    include: {
+      player: {
+        select: {
+          id: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+      reactions: {
+        where: { authId: playerAuthId },
+        select: { id: true },
+        take: 1,
+      },
+      comments: {
+        where: { authorId: playerAuthId },
+        select: { id: true },
+        take: 1,
+      },
+      shares: {
+        where: { authId: playerAuthId },
+        select: { id: true },
+        take: 1,
+      },
+      _count: {
+        select: {
+          comments: true,
+          reactions: true,
+        },
+      },
+    },
+    skip,
+    take,
+    orderBy: sortBy && orderBy ? { [sortBy]: orderBy } : { createdAt: "desc" },
+  });
+
+  const total = await prisma.post.count({
+    where: {
+      playerAuthId,
+    },
+  });
+
+  return {
+    meta: {
+      page,
+      limit: take,
+      total,
+    },
+    posts: posts.map(post => ({
+      ...post,
+      commentCount: post._count.comments,
+      reactionCount: post._count.reactions,
+      isReacted: (post.reactions?.length ?? 0) > 0,
+      isCommented: (post.comments?.length ?? 0) > 0,
+      isShared: (post.shares?.length ?? 0) > 0,
+      _count: undefined,
+      reactions: undefined,
+      comments: undefined,
+      shares: undefined,
+    })),
+  };
+};
+
+const getComments = async (
+  postId: string,
+  options: TPaginationOptions,
+  userId?: string
+) => {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { id: true },
+  });
+
+  if (!post) throw new ApiError(404, "Post not found");
+
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+
+  const comments = await prisma.comment.findMany({
+    where: { postId },
+    select: {
+      id: true,
+      text: true,
+      isEdited: true,
+      createdAt: true,
+      authorId: true,
+      author: {
+        select: {
+          role: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take,
+    orderBy: sortBy && orderBy ? { [sortBy]: orderBy } : { createdAt: "desc" },
+  });
+
+  const total = await prisma.comment.count({
+    where: { postId },
+  });
+
+  return {
+    meta: {
+      page,
+      limit: take,
+      total,
+    },
+    comments: comments.map(comment => ({
+      ...comment,
+      isMine: userId ? comment.authorId === userId : false,
+    })),
+  };
+};
+
 const update = async (
   postId: string,
   playerAuthId: string,
@@ -375,6 +507,8 @@ export const postServices = {
   create,
   confirmPayment,
   getAll,
+  getMyPosts,
+  getComments,
   update,
   remove,
   incrementShare,
