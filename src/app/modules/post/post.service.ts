@@ -192,6 +192,17 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
               image: true,
             },
           },
+          followingRelations: userId
+            ? {
+                where: {
+                  followerAuthId: userId,
+                },
+                select: {
+                  id: true,
+                },
+                take: 1,
+              }
+            : false,
         },
       },
       reactions: userId
@@ -242,10 +253,19 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
       isReacted: userId ? (post.reactions?.length ?? 0) > 0 : false,
       isCommented: userId ? (post.comments?.length ?? 0) > 0 : false,
       isShared: userId ? (post.shares?.length ?? 0) > 0 : false,
+      hasFollowed: userId
+        ? (post.player?.followingRelations?.length ?? 0) > 0
+        : false,
       _count: undefined,
       reactions: undefined,
       comments: undefined,
       shares: undefined,
+      player: post.player
+        ? {
+            ...post.player,
+            followingRelations: undefined,
+          }
+        : post.player,
     })),
   };
 };

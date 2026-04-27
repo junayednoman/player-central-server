@@ -1,10 +1,19 @@
 import prisma from "../../utils/prisma";
 import ApiError from "../../classes/ApiError";
+import { UserRole } from "@prisma/client";
 import {
   calculatePagination,
   TPaginationOptions,
 } from "../../utils/paginationCalculation";
 import { TToggleFollowing } from "./following.validation";
+
+const allowedFollowingTargets: Record<UserRole, UserRole[]> = {
+  [UserRole.ADMIN]: [],
+  [UserRole.PLAYER]: [UserRole.PLAYER, UserRole.COACH],
+  [UserRole.COACH]: [UserRole.PLAYER, UserRole.COACH],
+  [UserRole.PARENT]: [UserRole.COACH],
+  [UserRole.SCOUT]: [],
+};
 
 const toggle = async (followerAuthId: string, payload: TToggleFollowing) => {
   const followingAuthId = payload.userId;
@@ -12,11 +21,27 @@ const toggle = async (followerAuthId: string, payload: TToggleFollowing) => {
     throw new ApiError(400, "You cannot follow yourself");
   }
 
-  const target = await prisma.auth.findUnique({
-    where: { id: followingAuthId },
-    select: { id: true },
-  });
+  const [follower, target] = await Promise.all([
+    prisma.auth.findUnique({
+      where: { id: followerAuthId },
+      select: { id: true, role: true },
+    }),
+    prisma.auth.findUnique({
+      where: { id: followingAuthId },
+      select: { id: true, role: true },
+    }),
+  ]);
+
+  if (!follower) throw new ApiError(404, "Follower not found");
   if (!target) throw new ApiError(404, "User not found");
+
+  const allowedTargets = allowedFollowingTargets[follower.role] ?? [];
+  if (!allowedTargets.includes(target.role)) {
+    throw new ApiError(
+      403,
+      `${follower.role} cannot follow ${target.role}`
+    );
+  }
 
   const existing = await prisma.following.findFirst({
     where: {

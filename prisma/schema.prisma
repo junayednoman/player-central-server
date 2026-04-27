@@ -182,12 +182,12 @@ model Challenge {
 }
 
 model ChallengeBookmark {
-  id          String    @id @default(uuid())
-  challengeId String
-  challenge   Challenge @relation(fields: [challengeId], references: [id])
+  id           String    @id @default(uuid())
+  challengeId  String
+  challenge    Challenge @relation(fields: [challengeId], references: [id])
   playerAuthId String
-  player      Auth      @relation("ChallengeBookmarks", fields: [playerAuthId], references: [id])
-  createdAt   DateTime  @default(now())
+  player       Auth      @relation("ChallengeBookmarks", fields: [playerAuthId], references: [id])
+  createdAt    DateTime  @default(now())
 
   @@unique([challengeId, playerAuthId])
   @@map("challenge_bookmark")
@@ -468,11 +468,12 @@ model Notification {
 }
 
 model Legal {
-  id             String   @id @default(uuid())
-  privacyPolicy  String
-  termsCondition String
-  aboutUs        String
-  updatedAt      DateTime @updatedAt
+  id                        String   @id @default(uuid())
+  privacyPolicy             String
+  termsCondition            String
+  aboutUs                   String
+  sessionCancellationPolicy String
+  updatedAt                 DateTime @updatedAt
 
   @@map("legal")
 }
