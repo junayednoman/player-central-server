@@ -13,6 +13,7 @@ router.post(
   followingController.toggle
 );
 
+router.get("/suggested", authorize(), followingController.getSuggestedUsers);
 router.get("/:userId/following", followingController.getFollowing);
 router.get("/:userId/followers", followingController.getFollowers);
 

@@ -40,8 +40,23 @@ const getFollowers = handleAsyncRequest(async (req: Request, res: Response) => {
   });
 });
 
+const getSuggestedUsers = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
+    const result = await followingServices.getSuggestedUsers(
+      req.user?.id as string,
+      options
+    );
+    sendResponse(res, {
+      message: "Suggested users retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 export const followingController = {
   toggle,
   getFollowing,
   getFollowers,
+  getSuggestedUsers,
 };

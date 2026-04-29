@@ -1,6 +1,6 @@
 import prisma from "../../utils/prisma";
 import ApiError from "../../classes/ApiError";
-import { UserRole } from "@prisma/client";
+import { Prisma, UserRole, UserStatus } from "@prisma/client";
 import {
   calculatePagination,
   TPaginationOptions,
@@ -142,8 +142,73 @@ const getFollowers = async (userId: string, options: TPaginationOptions) => {
   };
 };
 
+const getSuggestedUsers = async (
+  userId: string,
+  options: TPaginationOptions
+) => {
+  const currentUser = await prisma.auth.findUnique({
+    where: { id: userId },
+    select: { id: true, role: true },
+  });
+  if (!currentUser) throw new ApiError(404, "User not found");
+
+  const allowedTargets = allowedFollowingTargets[currentUser.role] ?? [];
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+  const safeSortBy = sortBy === "createdAt" ? "id" : sortBy;
+
+  if (allowedTargets.length === 0) {
+    return {
+      meta: { page, limit: take, total: 0 },
+      users: [],
+    };
+  }
+
+  const where: Prisma.AuthWhereInput = {
+    id: { not: userId },
+    role: { in: allowedTargets },
+    status: UserStatus.ACTIVE,
+    NOT: {
+      followingRelations: {
+        some: {
+          followerAuthId: userId,
+        },
+      },
+    },
+  };
+
+  const [users, total] = await Promise.all([
+    prisma.auth.findMany({
+      where,
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        profile: {
+          select: {
+            name: true,
+            image: true,
+          },
+        },
+      },
+      skip,
+      take,
+      orderBy:
+        safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { id: "desc" },
+    }),
+    prisma.auth.count({
+      where,
+    }),
+  ]);
+
+  return {
+    meta: { page, limit: take, total },
+    users,
+  };
+};
+
 export const followingServices = {
   toggle,
   getFollowing,
   getFollowers,
+  getSuggestedUsers,
 };

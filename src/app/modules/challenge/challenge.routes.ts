@@ -19,7 +19,7 @@ router.post(
   validate(createChallengeZod, { formData: true }),
   challengeController.create
 );
-router.get("/", challengeController.getAll);
+router.get("/", authorize({ optional: true }), challengeController.getAll);
 router.get(
   "/bookmarks/my",
   authorize(UserRole.PLAYER),
@@ -30,7 +30,16 @@ router.get(
   authorize(UserRole.COACH),
   challengeController.getCoachSubmissions
 );
-router.get("/:challengeId", challengeController.getSingle);
+router.get(
+  "/submissions/player/my",
+  authorize(UserRole.PLAYER),
+  challengeController.getPlayerSubmissions
+);
+router.get(
+  "/:challengeId",
+  authorize({ optional: true }),
+  challengeController.getSingle
+);
 router.put(
   "/:challengeId",
   authorize(UserRole.COACH),

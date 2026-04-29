@@ -1,4 +1,5 @@
 import prisma from "../../utils/prisma";
+import { TAuthUser } from "../../interface/global.interface";
 import ApiError from "../../classes/ApiError";
 import { uploadToS3 } from "../../utils/awss3";
 import { TFile } from "../../interface/file.interface";
@@ -37,7 +38,7 @@ const create = async (
   return challenge;
 };
 
-const getAll = async (options: TPaginationOptions) => {
+const getAll = async (options: TPaginationOptions, user?: TAuthUser) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const challenges = await prisma.challenge.findMany({
@@ -47,6 +48,13 @@ const getAll = async (options: TPaginationOptions) => {
           profile: {
             select: { name: true, image: true },
           },
+          followingRelations: user
+            ? {
+                where: { followerAuthId: user.id },
+                select: { id: true },
+                take: 1,
+              }
+            : false,
         },
       },
     },
@@ -56,6 +64,24 @@ const getAll = async (options: TPaginationOptions) => {
   });
 
   const total = await prisma.challenge.count();
+  const bookmarkedChallengeIds =
+    user?.role === "PLAYER" && challenges.length > 0
+      ? new Set(
+          (
+            await challengeBookmarkModel.findMany({
+              where: {
+                playerAuthId: user.id,
+                challengeId: {
+                  in: challenges.map(challenge => challenge.id),
+                },
+              },
+              select: {
+                challengeId: true,
+              },
+            })
+          ).map(bookmark => bookmark.challengeId as string)
+        )
+      : new Set<string>();
 
   return {
     meta: {
@@ -63,11 +89,26 @@ const getAll = async (options: TPaginationOptions) => {
       limit: take,
       total,
     },
-    challenges,
+    challenges: challenges.map(challenge => ({
+      ...challenge,
+      hasFollowed: user
+        ? (challenge.coach?.followingRelations?.length ?? 0) > 0
+        : false,
+      isBookmarked:
+        user?.role === "PLAYER"
+          ? bookmarkedChallengeIds.has(challenge.id)
+          : false,
+      coach: challenge.coach
+        ? {
+            ...challenge.coach,
+            followingRelations: undefined,
+          }
+        : challenge.coach,
+    })),
   };
 };
 
-const getSingle = async (id: string) => {
+const getSingle = async (id: string, user?: TAuthUser) => {
   const challenge = await prisma.challenge.findUnique({
     where: { id },
     include: {
@@ -82,7 +123,7 @@ const getSingle = async (id: string) => {
   });
   if (!challenge) throw new ApiError(404, "Challenge not found");
 
-  const [acceptedCount, acceptedPreview] = await Promise.all([
+  const [acceptedCount, acceptedPreview, bookmark] = await Promise.all([
     prisma.challengeSubmission.count({ where: { challengeId: id } }),
     prisma.challengeSubmission.findMany({
       where: { challengeId: id },
@@ -101,10 +142,22 @@ const getSingle = async (id: string) => {
         },
       },
     }),
+    user?.role === "PLAYER"
+      ? challengeBookmarkModel.findUnique({
+          where: {
+            challengeId_playerAuthId: {
+              challengeId: id,
+              playerAuthId: user.id,
+            },
+          },
+          select: { id: true },
+        })
+      : Promise.resolve(null),
   ]);
 
   return {
     ...challenge,
+    isBookmarked: user?.role === "PLAYER" ? Boolean(bookmark) : false,
     acceptedCount,
     acceptedPreview: acceptedPreview
       .map(item => item.player?.profile)
@@ -268,6 +321,54 @@ const getCoachSubmissions = async (
   };
 };
 
+const getPlayerSubmissions = async (
+  playerAuthId: string,
+  options: TPaginationOptions
+) => {
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+
+  const submissions = await prisma.challengeSubmission.findMany({
+    where: {
+      playerId: playerAuthId,
+    },
+    include: {
+      challenge: {
+        include: {
+          coach: {
+            select: {
+              id: true,
+              profile: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take,
+    orderBy: sortBy && orderBy ? { [sortBy]: orderBy } : { createdAt: "desc" },
+  });
+
+  const total = await prisma.challengeSubmission.count({
+    where: {
+      playerId: playerAuthId,
+    },
+  });
+
+  return {
+    meta: {
+      page,
+      limit: take,
+      total,
+    },
+    submissions,
+  };
+};
+
 const toggleBookmark = async (challengeId: string, playerAuthId: string) => {
   const [challenge, player] = await Promise.all([
     prisma.challenge.findUnique({
@@ -381,4 +482,5 @@ export const challengeServices = {
   toggleBookmark,
   getMyBookmarkedChallenges,
   getCoachSubmissions,
+  getPlayerSubmissions,
 };

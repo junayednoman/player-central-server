@@ -46,7 +46,10 @@ const routes = [
   { path: "/users", route: followingRoutes },
   { path: "/custom-sessions", route: customSessionRoutes },
   { path: "/post-approval-requests", route: postApprovalRequestRoutes },
-  { path: "/challenge-approval-requests", route: challengeApprovalRequestRoutes },
+  {
+    path: "/challenge-approval-requests",
+    route: challengeApprovalRequestRoutes,
+  },
   { path: "/parents", route: parentRoutes },
   { path: "/scouts", route: scoutRoutes },
   { path: "/booking-approval-requests", route: bookingApprovalRequestRoutes },

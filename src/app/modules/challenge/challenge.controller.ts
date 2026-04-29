@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import handleAsyncRequest from "../../utils/handleAsyncRequest";
 import { sendResponse } from "../../utils/sendResponse";
 import { challengeServices } from "./challenge.service";
@@ -19,9 +19,9 @@ const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
-const getAll = handleAsyncRequest(async (req: Request, res: Response) => {
+const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
-  const result = await challengeServices.getAll(options);
+  const result = await challengeServices.getAll(options, req.user);
   sendResponse(res, {
     message: "Challenges retrieved successfully!",
     data: result,
@@ -42,9 +42,10 @@ const getMyBookmarkedChallenges = handleAsyncRequest(
   }
 );
 
-const getSingle = handleAsyncRequest(async (req: Request, res: Response) => {
+const getSingle = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await challengeServices.getSingle(
-    req.params.challengeId as string
+    req.params.challengeId as string,
+    req.user
   );
   sendResponse(res, {
     message: "Challenge retrieved successfully!",
@@ -116,6 +117,20 @@ const getCoachSubmissions = handleAsyncRequest(
   }
 );
 
+const getPlayerSubmissions = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
+    const result = await challengeServices.getPlayerSubmissions(
+      req.user?.id as string,
+      options
+    );
+    sendResponse(res, {
+      message: "My challenge submissions retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 export const challengeController = {
   create,
   getAll,
@@ -126,4 +141,5 @@ export const challengeController = {
   submit,
   toggleBookmark,
   getCoachSubmissions,
+  getPlayerSubmissions,
 };
