@@ -9,6 +9,11 @@ import { updatePlayerProfileZod } from "./player.validation";
 const router = Router();
 
 router.get("/", playerController.getAll);
+router.get(
+  "/search",
+  authorize(UserRole.COACH),
+  playerController.searchPlayers
+);
 router.get("/me", authorize(UserRole.PLAYER), playerController.getMyProfile);
 router.get("/:id", playerController.getSingle);
 router.patch(

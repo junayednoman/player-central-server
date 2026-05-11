@@ -90,6 +90,31 @@ const getAll = async (
   };
 };
 
+const searchPlayers = async (email: string) => {
+  const players = await prisma.playerProfile.findMany({
+    where: {
+      auth: {
+        email: { contains: email, mode: "insensitive" },
+      },
+    },
+    include: {
+      auth: {
+        select: {
+          id: true,
+          email: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  return players;
+};
+
 const getSingle = async (id: string) => {
   const player = await prisma.playerProfile.findUnique({
     where: { id },
@@ -196,6 +221,7 @@ const updateProfile = async (
 
 export const playerServices = {
   getAll,
+  searchPlayers,
   getSingle,
   getMyProfile,
   updateProfile,

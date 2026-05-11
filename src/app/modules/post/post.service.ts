@@ -203,6 +203,13 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
                 take: 1,
               }
             : false,
+          scoutShortlists: userId
+            ? {
+                where: {
+                  scoutAuthId: userId,
+                },
+              }
+            : false,
         },
       },
       reactions: userId
@@ -255,6 +262,9 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
       isShared: userId ? (post.shares?.length ?? 0) > 0 : false,
       hasFollowed: userId
         ? (post.player?.followingRelations?.length ?? 0) > 0
+        : false,
+      isShortlisted: userId
+        ? (post.player?.scoutShortlists?.length ?? 0) > 0
         : false,
       _count: undefined,
       reactions: undefined,

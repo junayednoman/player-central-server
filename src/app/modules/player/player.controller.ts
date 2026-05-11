@@ -14,6 +14,17 @@ const getAll = handleAsyncRequest(async (req: Request, res: Response) => {
   });
 });
 
+const searchPlayers = handleAsyncRequest(
+  async (req: Request, res: Response) => {
+    const email = req.query.email as string;
+    const result = await playerServices.searchPlayers(email);
+    sendResponse(res, {
+      message: "Players retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 const getSingle = handleAsyncRequest(async (req: Request, res: Response) => {
   const result = await playerServices.getSingle(req.params.id as string);
   sendResponse(res, {
@@ -48,6 +59,7 @@ const updateProfile = handleAsyncRequest(
 
 export const playerController = {
   getAll,
+  searchPlayers,
   getSingle,
   getMyProfile,
   updateProfile,

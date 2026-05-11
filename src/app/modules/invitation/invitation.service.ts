@@ -88,7 +88,10 @@ const getSent = async (scoutAuthId: string, options: TPaginationOptions) => {
   };
 };
 
-const getReceived = async (playerAuthId: string, options: TPaginationOptions) => {
+const getReceived = async (
+  playerAuthId: string,
+  options: TPaginationOptions
+) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
   const safeSortBy = sortBy === "createdAt" ? "sentAt" : sortBy;
 

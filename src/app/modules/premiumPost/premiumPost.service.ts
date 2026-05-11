@@ -20,7 +20,9 @@ const upsertConfig = async (payload: TUpdatePremiumPostConfig) => {
         price: payload.price,
         currency: payload.currency,
         features: payload.features,
-        ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {}),
+        ...(payload.isActive !== undefined
+          ? { isActive: payload.isActive }
+          : {}),
       },
     });
   }

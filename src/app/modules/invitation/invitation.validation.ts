@@ -2,7 +2,7 @@ import z from "zod";
 
 export const sendInvitationZod = z.object({
   playerId: z.string().uuid(),
-  trialDate: z.coerce.date(),
+  trialDate: z.string(),
   street: z.string().min(1).trim(),
   buildingNumber: z.string().min(1).trim(),
   postCode: z.string().min(1).trim(),

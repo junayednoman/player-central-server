@@ -105,7 +105,7 @@ const getAll = async (
   };
 };
 
-const getSingle = async (id: string) => {
+const getSingle = async (id: string, userId?: string) => {
   const coach = await prisma.coachProfile.findUnique({
     where: { id },
     include: {
@@ -117,6 +117,17 @@ const getSingle = async (id: string) => {
               image: true,
             },
           },
+          followingRelations: userId
+            ? {
+                where: {
+                  followerAuthId: userId,
+                },
+                select: {
+                  id: true,
+                },
+                take: 1,
+              }
+            : false,
         },
       },
     },
@@ -139,6 +150,7 @@ const getMyProfile = async (authId: string) => {
               image: true,
             },
           },
+          coachAvailabilityBlocks: true,
         },
       },
     },

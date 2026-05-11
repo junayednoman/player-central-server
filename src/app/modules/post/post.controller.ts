@@ -30,10 +30,7 @@ const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
 
 const getMyPosts = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
-  const result = await postServices.getMyPosts(
-    req.user?.id as string,
-    options
-  );
+  const result = await postServices.getMyPosts(req.user?.id as string, options);
   sendResponse(res, {
     message: "My posts retrieved successfully!",
     data: result,
