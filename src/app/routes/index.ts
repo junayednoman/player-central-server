@@ -27,6 +27,7 @@ import { invitationRoutes } from "../modules/invitation/invitation.routes";
 import { supportRoutes } from "../modules/support/support.routes";
 import { chatRoutes } from "../modules/chat/chat.routes";
 import { reportRoutes } from "../modules/report/report.routes";
+import { reviewRoutes } from "../modules/review/review.routes";
 
 const router = Router();
 
@@ -61,6 +62,7 @@ const routes = [
   { path: "/support-messages", route: supportRoutes },
   { path: "/chat", route: chatRoutes },
   { path: "/reports", route: reportRoutes },
+  { path: "/reviews", route: reviewRoutes },
 ];
 
 routes.forEach(route => {

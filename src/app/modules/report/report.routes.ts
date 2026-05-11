@@ -7,7 +7,12 @@ import { createReportZod } from "./report.validation";
 
 const router = Router();
 
-router.post("/", authorize(), validate(createReportZod), reportController.create);
+router.post(
+  "/",
+  authorize(),
+  validate(createReportZod),
+  reportController.create
+);
 router.get("/", authorize(UserRole.ADMIN), reportController.getAll);
 router.delete(
   "/content/:contentId",

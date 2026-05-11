@@ -23,3 +23,5 @@ router.delete(
   authorize(UserRole.PLAYER),
   reviewController.deleteReview
 );
+
+export const reviewRoutes = router;
