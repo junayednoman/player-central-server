@@ -8,7 +8,7 @@ import { postApprovalRequestServices } from "./postApprovalRequest.service";
 const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
   const result = await postApprovalRequestServices.getAll(
-    req.user?.id as string,
+    req.params?.playerAuthId as string,
     options
   );
   sendResponse(res, {
@@ -17,17 +17,19 @@ const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
-const updateStatus = handleAsyncRequest(async (req: TRequest, res: Response) => {
-  const result = await postApprovalRequestServices.updateStatus(
-    req.user?.id as string,
-    req.params.requestId as string,
-    req.body
-  );
-  sendResponse(res, {
-    message: "Post approval request updated successfully!",
-    data: result,
-  });
-});
+const updateStatus = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await postApprovalRequestServices.updateStatus(
+      req.user?.id as string,
+      req.params.requestId as string,
+      req.body
+    );
+    sendResponse(res, {
+      message: "Post approval request updated successfully!",
+      data: result,
+    });
+  }
+);
 
 export const postApprovalRequestController = {
   getAll,

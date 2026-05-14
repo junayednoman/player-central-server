@@ -117,7 +117,7 @@ const searchPlayers = async (email: string) => {
 
 const getSingle = async (id: string) => {
   const player = await prisma.playerProfile.findUnique({
-    where: { id },
+    where: { authId: id },
     include: {
       auth: {
         select: {
@@ -134,7 +134,12 @@ const getSingle = async (id: string) => {
 
   if (!player) throw new ApiError(404, "Player not found");
 
-  return player;
+  const birthDate = new Date(player.dob);
+  const today = new Date();
+
+  const age = today.getFullYear() - birthDate.getFullYear();
+
+  return { ...player, isUnderEighteen: age < 18 };
 };
 
 const getMyProfile = async (authId: string) => {
@@ -156,7 +161,12 @@ const getMyProfile = async (authId: string) => {
 
   if (!player) throw new ApiError(404, "Player profile not found");
 
-  return player;
+  const birthDate = new Date(player.dob);
+  const today = new Date();
+
+  const age = today.getFullYear() - birthDate.getFullYear();
+
+  return { ...player, isUnderEighteen: age < 18 };
 };
 
 const updateProfile = async (

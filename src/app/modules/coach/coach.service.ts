@@ -107,7 +107,7 @@ const getAll = async (
 
 const getSingle = async (id: string, userId?: string) => {
   const coach = await prisma.coachProfile.findUnique({
-    where: { id },
+    where: { authId: id },
     include: {
       auth: {
         select: {

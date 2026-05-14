@@ -6,24 +6,11 @@ import {
 } from "../../utils/paginationCalculation";
 import { TUpdatePostApprovalStatus } from "./postApprovalRequest.validation";
 
-const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
-  const children = await prisma.child.findMany({
-    where: { parentAuthIds: { has: parentAuthId } },
-    select: { playerAuthId: true },
-  });
-
-  const playerIds = children.map(c => c.playerAuthId);
-  if (playerIds.length === 0) {
-    return {
-      meta: { page: 1, limit: options.limit ?? 10, total: 0 },
-      requests: [],
-    };
-  }
-
+const getAll = async (playerAuthId: string, options: TPaginationOptions) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const requests = await prisma.postApprovalRequest.findMany({
-    where: { playerAuthId: { in: playerIds } },
+    where: { playerAuthId },
     include: {
       post: true,
       player: {
@@ -41,7 +28,7 @@ const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
   });
 
   const total = await prisma.postApprovalRequest.count({
-    where: { playerAuthId: { in: playerIds } },
+    where: { playerAuthId },
   });
 
   return {
@@ -71,25 +58,25 @@ const updateStatus = async (
   if (!isParent) throw new ApiError(403, "Unauthorized");
 
   return prisma.$transaction(async tx => {
+    await tx.postApprovalRequest.delete({
+      where: { id: requestId },
+    });
+
     if (payload.status === "APPROVED") {
       await tx.post.update({
         where: { id: request.postId },
         data: { status: "APPROVED" },
       });
     } else if (payload.status === "REJECTED") {
-      await tx.payment.updateMany({
+      console.log("hitting here");
+      await tx.payment.deleteMany({
         where: { postId: request.postId },
-        data: { postId: null },
       });
 
       await tx.post.delete({
         where: { id: request.postId },
       });
     }
-
-    await tx.postApprovalRequest.delete({
-      where: { id: requestId },
-    });
 
     return { status: payload.status };
   });

@@ -8,7 +8,7 @@ import { challengeApprovalRequestServices } from "./challengeApprovalRequest.ser
 const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
   const result = await challengeApprovalRequestServices.getAll(
-    req.user?.id as string,
+    req.params?.playerAuthId as string,
     options
   );
   sendResponse(res, {
@@ -28,17 +28,19 @@ const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   });
 });
 
-const updateStatus = handleAsyncRequest(async (req: TRequest, res: Response) => {
-  const result = await challengeApprovalRequestServices.updateStatus(
-    req.user?.id as string,
-    req.params.requestId as string,
-    req.body
-  );
-  sendResponse(res, {
-    message: "Challenge approval request updated successfully!",
-    data: result,
-  });
-});
+const updateStatus = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await challengeApprovalRequestServices.updateStatus(
+      req.user?.id as string,
+      req.params.requestId as string,
+      req.body
+    );
+    sendResponse(res, {
+      message: "Challenge approval request updated successfully!",
+      data: result,
+    });
+  }
+);
 
 export const challengeApprovalRequestController = {
   getAll,

@@ -18,6 +18,7 @@ import {
   createStripePaymentIntent,
   retrieveStripePaymentIntent,
 } from "../../utils/stripe";
+import { PostStatus } from "@prisma/client";
 
 const create = async (
   playerAuthId: string,
@@ -182,6 +183,7 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const posts = await prisma.post.findMany({
+    where: { status: PostStatus.APPROVED },
     include: {
       player: {
         select: {

@@ -8,7 +8,7 @@ import { updatePostApprovalStatusZod } from "./postApprovalRequest.validation";
 const router = Router();
 
 router.get(
-  "/",
+  "/:playerAuthId",
   authorize(UserRole.PARENT),
   postApprovalRequestController.getAll
 );

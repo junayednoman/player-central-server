@@ -10,24 +10,11 @@ import {
   TUpdateChallengeApprovalStatus,
 } from "./challengeApprovalRequest.validation";
 
-const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
-  const children = await prisma.child.findMany({
-    where: { parentAuthIds: { has: parentAuthId } },
-    select: { playerAuthId: true },
-  });
-
-  const playerIds = children.map(c => c.playerAuthId);
-  if (playerIds.length === 0) {
-    return {
-      meta: { page: 1, limit: options.limit ?? 10, total: 0 },
-      requests: [],
-    };
-  }
-
+const getAll = async (playerAuthId: string, options: TPaginationOptions) => {
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const requests = await prisma.challengeApprovalRequest.findMany({
-    where: { playerAuthId: { in: playerIds } },
+    where: { playerAuthId },
     include: {
       challenge: true,
       player: {
@@ -40,11 +27,12 @@ const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
     },
     skip,
     take,
-    orderBy: sortBy && orderBy ? { [sortBy]: orderBy } : { requestedAt: "desc" },
+    orderBy:
+      sortBy && orderBy ? { [sortBy]: orderBy } : { requestedAt: "desc" },
   });
 
   const total = await prisma.challengeApprovalRequest.count({
-    where: { playerAuthId: { in: playerIds } },
+    where: { playerAuthId },
   });
 
   return {
@@ -81,8 +69,7 @@ const updateStatus = async (
   const request = await prisma.challengeApprovalRequest.findUnique({
     where: { id: requestId },
   });
-  if (!request)
-    throw new ApiError(404, "Challenge approval request not found");
+  if (!request) throw new ApiError(404, "Challenge approval request not found");
 
   const isParent = await prisma.child.findFirst({
     where: {

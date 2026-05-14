@@ -28,6 +28,7 @@ import { supportRoutes } from "../modules/support/support.routes";
 import { chatRoutes } from "../modules/chat/chat.routes";
 import { reportRoutes } from "../modules/report/report.routes";
 import { reviewRoutes } from "../modules/review/review.routes";
+import { childRoutes } from "../modules/child/child.routes";
 
 const router = Router();
 
@@ -63,6 +64,7 @@ const routes = [
   { path: "/chat", route: chatRoutes },
   { path: "/reports", route: reportRoutes },
   { path: "/reviews", route: reviewRoutes },
+  { path: "/child", route: childRoutes },
 ];
 
 routes.forEach(route => {

@@ -11,7 +11,7 @@ import {
 const router = Router();
 
 router.get(
-  "/",
+  "/:playerAuthId",
   authorize(UserRole.PARENT),
   challengeApprovalRequestController.getAll
 );
