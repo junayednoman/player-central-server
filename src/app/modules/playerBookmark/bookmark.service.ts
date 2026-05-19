@@ -46,7 +46,18 @@ const getBookmarks = async (coachAuthId: string) => {
       coachAuthId,
     },
     include: {
-      player: true,
+      player: {
+        select: {
+          id: true,
+          email: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
     },
     orderBy: {
       id: "desc",
