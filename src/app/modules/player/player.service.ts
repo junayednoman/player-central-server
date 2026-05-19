@@ -136,6 +136,13 @@ const getSingle = async (id: string, user: TAuthUser) => {
                   },
                 }
               : false,
+          followingRelations: user
+            ? {
+                where: { followerAuthId: user.id },
+                select: { id: true },
+                take: 1,
+              }
+            : false,
         },
       },
     },
@@ -152,6 +159,7 @@ const getSingle = async (id: string, user: TAuthUser) => {
     ...player,
     isUnderEighteen: age < 18,
     isShortlisted: player.auth?.playerShortlists?.length > 0,
+    isFollowed: player.auth?.followingRelations?.length > 0,
   };
 };
 
