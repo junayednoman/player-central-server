@@ -236,6 +236,13 @@ const getAll = async (
                 },
               }
             : false,
+          playerBookmarks: userId
+            ? {
+                where: {
+                  coachAuthId: userId,
+                },
+              }
+            : false,
         },
       },
       reactions: userId
@@ -292,6 +299,9 @@ const getAll = async (
       isShortlisted: userId
         ? (post.player?.playerShortlists?.length ?? 0) > 0
         : false,
+      isBookmarked: userId
+        ? (post.player?.playerBookmarks?.length ?? 0) > 0
+        : false,
       _count: undefined,
       reactions: undefined,
       comments: undefined,
@@ -301,6 +311,7 @@ const getAll = async (
             ...post.player,
             followingRelations: undefined,
             playerShortlists: undefined,
+            playerBookmarks: undefined,
           }
         : post.player,
     })),

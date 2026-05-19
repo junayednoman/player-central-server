@@ -31,8 +31,8 @@ router.get(
   challengeController.getCoachSubmissions
 );
 router.get(
-  "/submissions/player/my",
-  authorize(UserRole.PLAYER),
+  "/submissions/:playerId",
+  authorize(UserRole.PLAYER, UserRole.COACH),
   challengeController.getPlayerSubmissions
 );
 router.get(

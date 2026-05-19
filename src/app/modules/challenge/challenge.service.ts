@@ -347,6 +347,17 @@ const getPlayerSubmissions = async (
           },
         },
       },
+      player: {
+        select: {
+          id: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
     },
     skip,
     take,

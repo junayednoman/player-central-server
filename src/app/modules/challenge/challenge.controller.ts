@@ -121,7 +121,7 @@ const getPlayerSubmissions = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
     const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
     const result = await challengeServices.getPlayerSubmissions(
-      req.user?.id as string,
+      req.params.playerId as string,
       options
     );
     sendResponse(res, {

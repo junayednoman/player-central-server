@@ -391,6 +391,8 @@ model PlayerBookmark {
   coach        Auth   @relation("CoachBookmarks", fields: [coachAuthId], references: [id])
   playerAuthId String
   player       Auth   @relation("PlayerBookmarks", fields: [playerAuthId], references: [id])
+
+  @@unique([coachAuthId, playerAuthId])
 }
 
 model PlayerShortlist {
