@@ -120,8 +120,12 @@ const signUp = async (payload: TSignup, file: TFile) => {
         if (age < 18 && payload.parentId && payload.parentRelationship) {
           await tn.child.create({
             data: {
-              playerAuthId: result.id,
-              parentAuthIds: [payload.parentId],
+              player: {
+                connect: { id: result.id },
+              },
+              parents: {
+                connect: [{ id: payload.parentId }],
+              },
               relationship: payload.parentRelationship,
               status: ChildStatus.PENDING,
             },

@@ -64,8 +64,10 @@ const getMyProfile = async (authId: string) => {
     }),
     prisma.child.count({
       where: {
-        parentAuthIds: {
-          has: authId,
+        parents: {
+          some: {
+            id: authId,
+          },
         },
       },
     }),
@@ -131,8 +133,10 @@ const updateProfile = async (
 
     const childCount = await tx.child.count({
       where: {
-        parentAuthIds: {
-          has: authId,
+        parents: {
+          some: {
+            id: authId,
+          },
         },
       },
     });
@@ -163,8 +167,10 @@ const updateChildAccess = async (
   const child = await prisma.child.findFirst({
     where: {
       id: childId,
-      parentAuthIds: {
-        has: parentAuthId,
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
       },
     },
     select: {

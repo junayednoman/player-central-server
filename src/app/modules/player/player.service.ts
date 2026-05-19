@@ -7,6 +7,7 @@ import {
   calculatePagination,
   TPaginationOptions,
 } from "../../utils/paginationCalculation";
+import { TAuthUser } from "../../interface/global.interface";
 
 const getAll = async (
   options: TPaginationOptions,
@@ -115,7 +116,7 @@ const searchPlayers = async (email: string) => {
   return players;
 };
 
-const getSingle = async (id: string) => {
+const getSingle = async (id: string, user: TAuthUser) => {
   const player = await prisma.playerProfile.findUnique({
     where: { authId: id },
     include: {
@@ -127,6 +128,14 @@ const getSingle = async (id: string) => {
               image: true,
             },
           },
+          playerShortlists:
+            user && user?.role === "SCOUT"
+              ? {
+                  where: {
+                    scoutAuthId: user.id,
+                  },
+                }
+              : false,
         },
       },
     },
@@ -139,7 +148,11 @@ const getSingle = async (id: string) => {
 
   const age = today.getFullYear() - birthDate.getFullYear();
 
-  return { ...player, isUnderEighteen: age < 18 };
+  return {
+    ...player,
+    isUnderEighteen: age < 18,
+    isShortlisted: player.auth?.playerShortlists?.length > 0,
+  };
 };
 
 const getMyProfile = async (authId: string) => {

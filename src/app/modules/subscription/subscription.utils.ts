@@ -1,9 +1,5 @@
 import Stripe from "stripe";
-import {
-  PaymentStatus,
-  SubscriptionStatus,
-  UserRole,
-} from "@prisma/client";
+import { PaymentStatus, SubscriptionStatus, UserRole } from "@prisma/client";
 
 export const toDate = (unixSeconds?: number | null) =>
   unixSeconds ? new Date(unixSeconds * 1000) : null;
@@ -43,12 +39,20 @@ export const getInvoicePaymentIntentId = (invoice: Stripe.Invoice) => {
     : rawInvoice.payment_intent?.id;
 };
 
-export const getLatestInvoicePaymentIntent = (
-  invoice?: Stripe.Invoice | null
-) => {
+// export const getLatestInvoicePaymentIntent = (
+//   invoice?: Stripe.Invoice | null
+// ) => {
+//   if (!invoice) return null;
+//   const rawInvoice = invoice as any;
+//   return (rawInvoice.payment_intent ?? null) as Stripe.PaymentIntent | null;
+// };
+
+export const getLatestInvoicePaymentIntent = (invoice?: any) => {
   if (!invoice) return null;
-  const rawInvoice = invoice as any;
-  return (rawInvoice.payment_intent ?? null) as Stripe.PaymentIntent | null;
+  // Handle both expanded object and string ID cases
+  return invoice.payment_intent && typeof invoice.payment_intent !== "string"
+    ? (invoice.payment_intent as Stripe.PaymentIntent)
+    : null;
 };
 
 export const mapStripeSubscriptionStatus = (

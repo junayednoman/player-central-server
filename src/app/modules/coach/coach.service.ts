@@ -112,22 +112,15 @@ const getSingle = async (id: string, userId?: string) => {
       auth: {
         select: {
           profile: {
-            select: {
-              name: true,
-              image: true,
-            },
+            select: { name: true, image: true },
           },
-          followingRelations: userId
-            ? {
-                where: {
-                  followerAuthId: userId,
-                },
-                select: {
-                  id: true,
-                },
-                take: 1,
-              }
-            : false,
+          ...(userId && {
+            followingRelations: {
+              where: { followerAuthId: userId },
+              select: { id: true },
+              take: 1,
+            },
+          }),
         },
       },
     },
@@ -135,9 +128,21 @@ const getSingle = async (id: string, userId?: string) => {
 
   if (!coach) throw new ApiError(404, "Coach not found");
 
-  return coach;
-};
+  const hasFollowed = userId
+    ? (coach.auth?.followingRelations?.length ?? 0) > 0
+    : false;
 
+  return {
+    ...coach,
+    auth: coach.auth
+      ? {
+          ...coach.auth,
+          followingRelations: undefined,
+          has_followed: hasFollowed,
+        }
+      : null,
+  };
+};
 const getMyProfile = async (authId: string) => {
   const coach = await prisma.coachProfile.findUnique({
     where: { authId },

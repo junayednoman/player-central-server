@@ -18,7 +18,7 @@ import {
   createStripePaymentIntent,
   retrieveStripePaymentIntent,
 } from "../../utils/stripe";
-import { PostStatus } from "@prisma/client";
+import { PostStatus, Prisma } from "@prisma/client";
 
 const create = async (
   playerAuthId: string,
@@ -179,11 +179,35 @@ const confirmPayment = async (postId: string, payerAuthId: string) => {
   };
 };
 
-const getAll = async (options: TPaginationOptions, userId?: string) => {
+const getAll = async (
+  options: TPaginationOptions,
+  query: Record<string, any>,
+  userId?: string
+) => {
+  const andConditions: Prisma.PostWhereInput[] = [];
+
+  andConditions.push({
+    status: PostStatus.APPROVED,
+  });
+
+  if (query.isFollowing) {
+    andConditions.push({
+      player: {
+        followingRelations: {
+          some: {
+            followerAuthId: userId,
+          },
+        },
+      },
+    });
+  }
+
+  const whereConditions: Prisma.PostWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
   const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
 
   const posts = await prisma.post.findMany({
-    where: { status: PostStatus.APPROVED },
+    where: whereConditions,
     include: {
       player: {
         select: {
@@ -205,7 +229,7 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
                 take: 1,
               }
             : false,
-          scoutShortlists: userId
+          playerShortlists: userId
             ? {
                 where: {
                   scoutAuthId: userId,
@@ -266,7 +290,7 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
         ? (post.player?.followingRelations?.length ?? 0) > 0
         : false,
       isShortlisted: userId
-        ? (post.player?.scoutShortlists?.length ?? 0) > 0
+        ? (post.player?.playerShortlists?.length ?? 0) > 0
         : false,
       _count: undefined,
       reactions: undefined,
@@ -276,6 +300,7 @@ const getAll = async (options: TPaginationOptions, userId?: string) => {
         ? {
             ...post.player,
             followingRelations: undefined,
+            playerShortlists: undefined,
           }
         : post.player,
     })),

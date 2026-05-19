@@ -10,17 +10,17 @@ const router = Router();
 router.post(
   "/",
   validate(createReviewValidation),
-  authorize(UserRole.PLAYER),
+  authorize(UserRole.PLAYER, UserRole.PARENT),
   reviewController.createReview
 );
 router.get(
   "/",
-  authorize(UserRole.PLAYER, UserRole.COACH),
+  authorize(UserRole.PLAYER, UserRole.COACH, UserRole.PARENT),
   reviewController.getAllReviews
 );
 router.delete(
   "/:id",
-  authorize(UserRole.PLAYER),
+  authorize(UserRole.PLAYER, UserRole.PARENT),
   reviewController.deleteReview
 );
 

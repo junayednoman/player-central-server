@@ -51,7 +51,11 @@ const updateStatus = async (
   const isParent = await prisma.child.findFirst({
     where: {
       playerAuthId: request.playerAuthId,
-      parentAuthIds: { has: parentAuthId },
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
+      },
     },
     select: { id: true },
   });

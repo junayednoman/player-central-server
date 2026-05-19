@@ -6,7 +6,10 @@ import { Response } from "express";
 
 const getAllChildren = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
-    const result = await childService.getAllChildren(req.query);
+    const result = await childService.getAllChildren(
+      req.query,
+      req.user?.id as string
+    );
 
     sendResponse(res, {
       success: true,
@@ -60,9 +63,41 @@ const getParentsByChildId = handleAsyncRequest(
   }
 );
 
+const updateDefaultChildId = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.updateDefaultChildId(
+      req.params.id as string,
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Default child update successfully",
+      data: result,
+    });
+  }
+);
+
+const addNewParent = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.addNewParent(
+      req.body,
+      req.params?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "New parent added successfully",
+      data: result,
+    });
+  }
+);
+
 export const childControllers = {
   getAllChildren,
   getChildApprovalRequests,
   updateChildStatus,
   getParentsByChildId,
+  updateDefaultChildId,
+  addNewParent,
 };

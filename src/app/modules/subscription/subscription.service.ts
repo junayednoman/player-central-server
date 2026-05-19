@@ -12,6 +12,7 @@ import {
   retrieveStripePaymentIntent,
   retrieveStripeSubscription,
   setStripeSubscriptionAutoRenewal,
+  stripe,
   updateStripeProduct,
 } from "../../utils/stripe";
 import {
@@ -123,6 +124,7 @@ const checkout = async (authId: string, payload: TCheckoutSubscription) => {
       subscription: true,
     },
   });
+
   if (!auth) throw new ApiError(404, "User not found");
   if (!isSupportedSubscriptionRole(auth.role)) {
     throw new ApiError(403, "Only coach and scout can subscribe");
@@ -135,6 +137,7 @@ const checkout = async (authId: string, payload: TCheckoutSubscription) => {
       isActive: true,
     },
   });
+
   if (!plan) throw new ApiError(404, "Subscription plan not found");
   if (!plan.stripePriceId) {
     throw new ApiError(400, "Stripe price is not configured for this plan");
@@ -166,9 +169,41 @@ const checkout = async (authId: string, payload: TCheckoutSubscription) => {
     }
   );
 
-  const latestInvoice =
-    stripeSubscription.latest_invoice as Stripe.Invoice | null;
-  const paymentIntent = getLatestInvoicePaymentIntent(latestInvoice);
+  const latestInvoice = stripeSubscription.latest_invoice as any;
+
+  let paymentIntent = getLatestInvoicePaymentIntent(latestInvoice);
+
+  if (!paymentIntent && latestInvoice?.id) {
+    const invoice = await stripe.invoices.retrieve(latestInvoice.id, {
+      expand: ["payment_intent"],
+    });
+
+    paymentIntent =
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      invoice.payment_intent && typeof invoice.payment_intent !== "string"
+        ? // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore
+          (invoice.payment_intent as Stripe.PaymentIntent)
+        : null;
+
+    if (!paymentIntent && invoice.amount_due > 0) {
+      paymentIntent = await stripe.paymentIntents.create({
+        amount: invoice.amount_due,
+        currency: invoice.currency || plan.currency,
+        customer: customerId,
+        metadata: {
+          subscriptionId: stripeSubscription.id,
+          authId,
+          planId: plan.id,
+        },
+        automatic_payment_methods: {
+          enabled: true,
+        },
+      });
+    }
+  }
+
   const subscriptionPeriod = getStripeSubscriptionPeriod(stripeSubscription);
 
   const subscription = await prisma.subscription.upsert({

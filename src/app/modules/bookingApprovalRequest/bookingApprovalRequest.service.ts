@@ -9,7 +9,13 @@ import { TUpdateBookingApprovalStatus } from "./bookingApprovalRequest.validatio
 
 const getAll = async (parentAuthId: string, options: TPaginationOptions) => {
   const children = await prisma.child.findMany({
-    where: { parentAuthIds: { has: parentAuthId } },
+    where: {
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
+      },
+    },
     select: { playerAuthId: true },
   });
 
@@ -61,7 +67,11 @@ const createPaymentIntent = async (parentAuthId: string, requestId: string) => {
   const isParent = await prisma.child.findFirst({
     where: {
       playerAuthId: request.playerAuthId,
-      parentAuthIds: { has: parentAuthId },
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
+      },
     },
     select: { id: true },
   });
@@ -157,7 +167,11 @@ const updateStatus = async (
   const isParent = await prisma.child.findFirst({
     where: {
       playerAuthId: request.playerAuthId,
-      parentAuthIds: { has: parentAuthId },
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
+      },
     },
     select: { id: true },
   });

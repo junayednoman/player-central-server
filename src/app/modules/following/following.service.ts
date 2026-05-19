@@ -37,10 +37,7 @@ const toggle = async (followerAuthId: string, payload: TToggleFollowing) => {
 
   const allowedTargets = allowedFollowingTargets[follower.role] ?? [];
   if (!allowedTargets.includes(target.role)) {
-    throw new ApiError(
-      403,
-      `${follower.role} cannot follow ${target.role}`
-    );
+    throw new ApiError(403, `${follower.role} cannot follow ${target.role}`);
   }
 
   const existing = await prisma.following.findFirst({
@@ -90,8 +87,7 @@ const getFollowing = async (userId: string, options: TPaginationOptions) => {
     },
     skip,
     take,
-    orderBy:
-      safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { id: "desc" },
+    orderBy: safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { id: "desc" },
   });
 
   const total = await prisma.following.count({
@@ -128,8 +124,7 @@ const getFollowers = async (userId: string, options: TPaginationOptions) => {
     },
     skip,
     take,
-    orderBy:
-      safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { id: "desc" },
+    orderBy: safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { id: "desc" },
   });
 
   const total = await prisma.following.count({

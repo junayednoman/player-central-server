@@ -57,7 +57,7 @@ model Auth {
   conversationParticipants   ConversationParticipant[]
   sentMessages               Message[]                  @relation("MessageSender")
   reports                    Report[]                   @relation("ReporterReports")
-  children                   Child[]
+  children                   Child[]                    @relation("ParentToChildren")
 
   @@map("auth")
 }
@@ -450,13 +450,11 @@ model Child {
   id            String            @id @default(uuid())
   playerAuthId  String
   player        Auth              @relation("PlayerChildren", fields: [playerAuthId], references: [id])
-  parentAuthIds String[]
-  parents       Auth              @relation(fields: [authId], references: [id])
+  parents       Auth[]            @relation("ParentToChildren")
   relationship  ChildRelationShip
   status        ChildStatus
   whoCanComment ChildAccessScope  @default(EVERYONE)
   whoCanFollow  ChildAccessScope  @default(EVERYONE)
-  authId        String
 }
 
 model Notification {

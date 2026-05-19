@@ -4,10 +4,7 @@ import {
   calculatePagination,
   TPaginationOptions,
 } from "../../utils/paginationCalculation";
-import {
-  TCreateConversation,
-  TSendMessage,
-} from "./chat.validation";
+import { TCreateConversation, TSendMessage } from "./chat.validation";
 
 const ensureParticipant = async (conversationId: string, authId: string) => {
   const participant = await prisma.conversationParticipant.findUnique({
@@ -87,20 +84,14 @@ const getOrCreateConversation = async (
     },
   });
 
-  if (
-    existingConversation &&
-    existingConversation.participants.length === 2
-  ) {
+  if (existingConversation && existingConversation.participants.length === 2) {
     return existingConversation;
   }
 
   return prisma.conversation.create({
     data: {
       participants: {
-        create: [
-          { authId, lastReadAt: new Date() },
-          { authId: participantId },
-        ],
+        create: [{ authId, lastReadAt: new Date() }, { authId: participantId }],
       },
     },
     include: {

@@ -15,7 +15,7 @@ router.get(
   playerController.searchPlayers
 );
 router.get("/me", authorize(UserRole.PLAYER), playerController.getMyProfile);
-router.get("/:id", playerController.getSingle);
+router.get("/:id", authorize(), playerController.getSingle);
 router.patch(
   "/profile",
   authorize(UserRole.PLAYER),

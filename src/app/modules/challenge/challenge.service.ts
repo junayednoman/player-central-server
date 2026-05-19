@@ -447,7 +447,8 @@ const getMyBookmarkedChallenges = async (
     },
     skip,
     take,
-    orderBy: safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { createdAt: "desc" },
+    orderBy:
+      safeSortBy && orderBy ? { [safeSortBy]: orderBy } : { createdAt: "desc" },
   });
 
   const total = await challengeBookmarkModel.count({

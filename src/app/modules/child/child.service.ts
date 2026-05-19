@@ -1,16 +1,22 @@
 import { ChildStatus, Prisma } from "@prisma/client";
 import ApiError from "../../classes/ApiError";
 import prisma from "../../utils/prisma";
+import { TUpdateNewParent } from "./child.validation";
 
-const getAllChildren = async (query: Record<string, any>) => {
+const getAllChildren = async (
+  query: Record<string, any>,
+  parentAuthId: string
+) => {
   const { searchTerm, page = 1, limit = 10 } = query;
-
   const skip = (Number(page) - 1) * Number(limit);
 
   const andConditions: Prisma.ChildWhereInput[] = [];
 
   andConditions.push({
     status: "APPROVED",
+    parents: {
+      some: { id: parentAuthId },
+    },
   });
 
   if (searchTerm) {
@@ -19,19 +25,13 @@ const getAllChildren = async (query: Record<string, any>) => {
         {
           player: {
             profile: {
-              name: {
-                contains: searchTerm,
-                mode: "insensitive",
-              },
+              name: { contains: searchTerm, mode: "insensitive" },
             },
           },
         },
         {
           player: {
-            email: {
-              contains: searchTerm,
-              mode: "insensitive",
-            },
+            email: { contains: searchTerm, mode: "insensitive" },
           },
         },
       ],
@@ -42,7 +42,12 @@ const getAllChildren = async (query: Record<string, any>) => {
     ? { AND: andConditions }
     : {};
 
-  const [data, total] = await Promise.all([
+  const parentProfile = await prisma.parentProfile.findUnique({
+    where: { authId: parentAuthId },
+    select: { defaultChildId: true },
+  });
+
+  const [rawChildren, total] = await Promise.all([
     prisma.child.findMany({
       where: whereConditions,
       include: {
@@ -61,11 +66,15 @@ const getAllChildren = async (query: Record<string, any>) => {
       skip,
       take: Number(limit),
     }),
-
     prisma.child.count({
       where: whereConditions,
     }),
   ]);
+
+  const data = rawChildren.map(child => ({
+    ...child,
+    isDefault: child.id === parentProfile?.defaultChildId,
+  }));
 
   return {
     meta: {
@@ -76,12 +85,13 @@ const getAllChildren = async (query: Record<string, any>) => {
     data,
   };
 };
-
 const getChildApprovalRequests = async (parentAuthId: string) => {
   const result = await prisma.child.findMany({
     where: {
-      parentAuthIds: {
-        has: parentAuthId,
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
       },
       status: "PENDING",
     },
@@ -111,8 +121,10 @@ const updateChildStatus = async (
   const child = await prisma.child.findFirst({
     where: {
       id: childId,
-      parentAuthIds: {
-        has: parentAuthId,
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
       },
     },
   });
@@ -161,9 +173,51 @@ const getParentsByChildId = async (id: string) => {
   return child.parents;
 };
 
+const updateDefaultChildId = async (childId: string, parentAuthId: string) => {
+  await prisma.child.findUniqueOrThrow({
+    where: {
+      id: childId,
+      parents: {
+        some: { id: parentAuthId },
+      },
+    },
+  });
+
+  const result = await prisma.parentProfile.update({
+    where: { authId: parentAuthId },
+    data: {
+      defaultChildId: childId,
+    },
+  });
+
+  return result;
+};
+
+const addNewParent = async (payload: TUpdateNewParent, childId: string) => {
+  await prisma.child.findUniqueOrThrow({
+    where: {
+      id: childId,
+    },
+  });
+
+  const result = await prisma.child.update({
+    where: {
+      id: childId,
+    },
+    data: {
+      parents: {
+        connect: [{ id: payload.parentId }],
+      },
+    },
+  });
+
+  return result;
+};
 export const childService = {
   getAllChildren,
   getChildApprovalRequests,
   updateChildStatus,
   getParentsByChildId,
+  updateDefaultChildId,
+  addNewParent,
 };

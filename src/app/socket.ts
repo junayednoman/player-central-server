@@ -59,6 +59,10 @@ export const initSocket = (server: HttpServer) => {
       try {
         await chatServices.ensureParticipant(payload.conversationId, user.id);
         socket.join(`conversation:${payload.conversationId}`);
+        await chatServices.markConversationRead(
+          payload.conversationId,
+          user.id
+        );
       } catch (_error) {
         socket.emit("chat:error", {
           message: "Unable to join conversation",
@@ -76,10 +80,10 @@ export const initSocket = (server: HttpServer) => {
             { text: payload.text }
           );
 
-          io.to(`conversation:${payload.conversationId}`).emit(
-            "chat:message:new",
-            message
-          );
+          // io.to(`conversation:${payload.conversationId}`).emit(
+          //   "chat:message:new",
+          //   message
+          // );
 
           const participantIds =
             await chatServices.getConversationParticipantIds(
@@ -87,6 +91,7 @@ export const initSocket = (server: HttpServer) => {
             );
 
           participantIds.forEach(participantId => {
+            io.to(`user:${participantId}`).emit("chat:message:new", message);
             io.to(`user:${participantId}`).emit("chat:conversation:update", {
               conversationId: payload.conversationId,
               message,

@@ -3,7 +3,7 @@ import authorize from "../../middlewares/authorize";
 import { UserRole } from "@prisma/client";
 import { childControllers } from "./child.controller";
 import validate from "../../middlewares/validate";
-import { updateChildStatusSchema } from "./child.validation";
+import { addNewParentZod, updateChildStatusSchema } from "./child.validation";
 
 const router = Router();
 
@@ -24,8 +24,21 @@ router.patch(
 
 router.get(
   "/:id/parents",
-  authorize(UserRole.PLAYER),
+  authorize(UserRole.PARENT),
   childControllers.getParentsByChildId
+);
+
+router.patch(
+  "/:id/default",
+  authorize(UserRole.PARENT),
+  childControllers.updateDefaultChildId
+);
+
+router.post(
+  "/:id/parents",
+  authorize(UserRole.PARENT),
+  validate(addNewParentZod),
+  childControllers.addNewParent
 );
 
 export const childRoutes = router;

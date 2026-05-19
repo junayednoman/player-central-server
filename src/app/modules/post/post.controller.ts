@@ -21,7 +21,7 @@ const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
 
 const getAll = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const options = pick(req.query, ["page", "limit", "sortBy", "orderBy"]);
-  const result = await postServices.getAll(options, req.user?.id);
+  const result = await postServices.getAll(options, req.query, req.user?.id);
   sendResponse(res, {
     message: "Posts retrieved successfully!",
     data: result,
