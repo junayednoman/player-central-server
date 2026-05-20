@@ -31,6 +31,7 @@ import { reviewRoutes } from "../modules/review/review.routes";
 import { childRoutes } from "../modules/child/child.routes";
 import { playerBookmarkRoutes } from "../modules/playerBookmark/bookmark.routes";
 import { paymentRoutes } from "../modules/payment/payment.routes";
+import { newsRoutes } from "../modules/news/news.routes";
 
 const router = Router();
 
@@ -69,6 +70,7 @@ const routes = [
   { path: "/child", route: childRoutes },
   { path: "/player-bookmarks", route: playerBookmarkRoutes },
   { path: "/payments", route: paymentRoutes },
+  { path: "/news", route: newsRoutes },
 ];
 
 routes.forEach(route => {

@@ -160,7 +160,11 @@ const checkPlayerDoubleBooking = async (
 
   const customConflict = await prisma.customSessionBooking.findFirst({
     where: {
-      playerAuthIds: { has: playerAuthId },
+      players: {
+        some: {
+          id: playerAuthId,
+        },
+      },
       status: {
         in: ["PENDING", "APPROVED", "UPCOMING"],
       },

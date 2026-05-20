@@ -66,7 +66,7 @@ const checkOverlaps = async (
 
     const conflictCustomPlayers = await prisma.customSessionBooking.findFirst({
       where: {
-        playerAuthIds: { hasSome: playerAuthIds },
+        players: { some: { id: { in: playerAuthIds } } },
         status: { in: ["PENDING", "APPROVED", "UPCOMING"] },
         startAt: { lt: endAt },
         endAt: { gt: startAt },
@@ -129,7 +129,7 @@ const create = async (coachAuthId: string, payload: TCreateCustomSession) => {
   return prisma.customSessionBooking.create({
     data: {
       coachAuthId,
-      playerAuthIds,
+      players: { connect: playerAuthIds.map(id => ({ id })) },
       sessionType: payload.sessionType,
       maxPlayers: payload.maxPlayers,
       mode: payload.mode,
@@ -157,6 +157,9 @@ const getAll = async (
     where,
     include: {
       coach: {
+        select: { id: true, profile: { select: { name: true, image: true } } },
+      },
+      players: {
         select: { id: true, profile: { select: { name: true, image: true } } },
       },
     },
