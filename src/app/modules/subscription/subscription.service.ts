@@ -276,6 +276,16 @@ const getMySubscription = async (authId: string) => {
         orderBy: { createdAt: "desc" },
         take: 10,
       },
+      auth: {
+        select: {
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
     },
   });
 };

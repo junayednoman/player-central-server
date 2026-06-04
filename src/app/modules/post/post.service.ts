@@ -21,9 +21,10 @@ import {
 import { PostStatus, Prisma } from "@prisma/client";
 
 const create = async (
-  playerAuthId: string,
   payload: TCreatePost,
-  file: TFile
+  file: TFile,
+  playerAuthId?: string,
+  parentAuthId?: string
 ) => {
   const videoUrl = await uploadToS3(file);
 

@@ -93,6 +93,64 @@ const addNewParent = handleAsyncRequest(
   }
 );
 
+const addChildRequest = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.addChildRequest(
+      req.params.childId as string,
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Add child request sent successfully",
+      data: result,
+    });
+  }
+);
+
+const getChildAddRequests = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.getChildAddRequests(
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Add child requests retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+const updateChildAddRequest = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.updateChildAddRequest(
+      req.params?.addChildRequestId as string,
+      req.body.status
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Add child requests updated successfully",
+      data: result,
+    });
+  }
+);
+
+const getAllAvailableChild = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.getAllAvailableChild(
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Available children retrieved successfully",
+      data: result,
+    });
+  }
+);
+
 export const childControllers = {
   getAllChildren,
   getChildApprovalRequests,
@@ -100,4 +158,8 @@ export const childControllers = {
   getParentsByChildId,
   updateDefaultChildId,
   addNewParent,
+  addChildRequest,
+  getChildAddRequests,
+  updateChildAddRequest,
+  getAllAvailableChild,
 };

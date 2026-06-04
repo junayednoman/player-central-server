@@ -9,9 +9,9 @@ import { postServices } from "./post.service";
 const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   if (!req.file) throw new ApiError(400, "Video file is required");
   const result = await postServices.create(
-    req.user?.id as string,
     req.body,
-    req.file
+    req.file,
+    req.user?.id as string
   );
   sendResponse(res, {
     message: "Post created successfully!",

@@ -1,4 +1,4 @@
-import { ChildStatus, Prisma } from "@prisma/client";
+import { ChildStatus, Prisma, UserRole } from "@prisma/client";
 import ApiError from "../../classes/ApiError";
 import prisma from "../../utils/prisma";
 import { TUpdateNewParent } from "./child.validation";
@@ -213,6 +213,170 @@ const addNewParent = async (payload: TUpdateNewParent, childId: string) => {
 
   return result;
 };
+
+const addChildRequest = async (childId: string, parentAuthId: string) => {
+  const child = await prisma.child.findUniqueOrThrow({
+    where: {
+      id: childId,
+      status: ChildStatus.APPROVED,
+    },
+    select: {
+      parents: true,
+    },
+  });
+
+  if (child.parents.some(parent => parent.id === parentAuthId)) {
+    throw new ApiError(400, "This parent already added for this child");
+  }
+
+  const result = await prisma.childApprovalRequest.create({
+    data: {
+      childId: childId,
+      requesterParentId: parentAuthId,
+    },
+  });
+
+  return result;
+};
+
+const getChildAddRequests = async (parentAuthId: string) => {
+  console.log("parentAuthId", parentAuthId);
+  const result = await prisma.childApprovalRequest.findMany({
+    where: {
+      childId: {
+        in: (
+          await prisma.child.findMany({
+            where: {
+              parents: {
+                some: { id: parentAuthId },
+              },
+            },
+            select: { id: true },
+          })
+        ).map(c => c.id),
+      },
+
+      NOT: {
+        requesterParentId: parentAuthId,
+      },
+    },
+    include: {
+      child: {
+        include: {
+          player: {
+            select: {
+              email: true,
+              profile: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      requesterParent: {
+        select: {
+          id: true,
+          email: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return result;
+};
+
+const updateChildAddRequest = async (
+  requestId: string,
+  status: "APPROVED" | "REJECTED"
+) => {
+  const request = await prisma.childApprovalRequest.findUniqueOrThrow({
+    where: {
+      id: requestId,
+    },
+  });
+
+  const result = await prisma.$transaction(async tx => {
+    if (status === "APPROVED") {
+      await tx.child.update({
+        where: {
+          id: request.childId,
+        },
+        data: {
+          parents: {
+            connect: [{ id: request.requesterParentId }],
+          },
+        },
+      });
+    }
+
+    return await tx.childApprovalRequest.delete({
+      where: {
+        id: requestId,
+      },
+    });
+  });
+
+  return result;
+};
+
+const getAllAvailableChild = async (parentAuthId: string) => {
+  const eighteenYears = new Date();
+  eighteenYears.setFullYear(eighteenYears.getFullYear() - 18);
+  const child = await prisma.auth.findMany({
+    where: {
+      role: UserRole.PLAYER,
+      playerProfile: {
+        dob: {
+          gt: eighteenYears,
+        },
+      },
+      playerChildren: {
+        none: {
+          parents: {
+            some: { id: parentAuthId },
+          },
+        },
+      },
+    },
+    select: {
+      id: true,
+      email: true,
+      profile: true,
+      playerChildren: {
+        select: {
+          id: true,
+          childApprovalRequests: {
+            where: {
+              requesterParentId: parentAuthId,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  const result = child.map(child => ({
+    ...child,
+    isRequested: child.playerChildren.some(
+      pc => pc.childApprovalRequests.length > 0
+    ),
+  }));
+
+  return result;
+};
+
 export const childService = {
   getAllChildren,
   getChildApprovalRequests,
@@ -220,4 +384,8 @@ export const childService = {
   getParentsByChildId,
   updateDefaultChildId,
   addNewParent,
+  addChildRequest,
+  getChildAddRequests,
+  updateChildAddRequest,
+  getAllAvailableChild,
 };

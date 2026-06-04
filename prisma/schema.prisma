@@ -62,6 +62,7 @@ model Auth {
   childId                    String?
   children                   Child[]                    @relation("ParentToChildren")
   customSessionPlayers       CustomSessionBooking[]     @relation("CustomSessionPlayers")
+  childApprovalRequests      ChildApprovalRequest[]     @relation("ChildApprovals")
 
   @@map("auth")
 }
@@ -453,16 +454,28 @@ model Review {
 }
 
 model Child {
-  id               String             @id @default(uuid())
-  relationship     ChildRelationShip
-  status           ChildStatus
-  parents          Auth[]             @relation("ParentToChildren")
-  playerAuthId     String
-  whoCanComment    ChildAccessScope   @default(EVERYONE)
-  whoCanFollow     ChildAccessScope   @default(EVERYONE)
-  player           Auth               @relation("PlayerChildren", fields: [playerAuthId], references: [id])
-  ParentToChildren ParentToChildren[]
-  auths            Auth[]
+  id                    String                 @id @default(uuid())
+  relationship          ChildRelationShip
+  status                ChildStatus
+  parents               Auth[]                 @relation("ParentToChildren")
+  playerAuthId          String
+  whoCanComment         ChildAccessScope       @default(EVERYONE)
+  whoCanFollow          ChildAccessScope       @default(EVERYONE)
+  player                Auth                   @relation("PlayerChildren", fields: [playerAuthId], references: [id])
+  ParentToChildren      ParentToChildren[]
+  auths                 Auth[]
+  childApprovalRequests ChildApprovalRequest[]
+}
+
+model ChildApprovalRequest {
+  id                String   @id @default(uuid())
+  childId           String
+  child             Child    @relation(fields: [childId], references: [id])
+  requesterParentId String
+  requesterParent   Auth     @relation("ChildApprovals", fields: [requesterParentId], references: [id])
+  createdAt         DateTime @default(now())
+
+  @@unique([childId, requesterParentId])
 }
 
 model Notification {

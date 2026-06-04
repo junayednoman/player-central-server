@@ -8,6 +8,11 @@ import { addNewParentZod, updateChildStatusSchema } from "./child.validation";
 const router = Router();
 
 router.get("/", authorize(UserRole.PARENT), childControllers.getAllChildren);
+router.get(
+  "/available",
+  authorize(UserRole.PARENT),
+  childControllers.getAllAvailableChild
+);
 
 router.get(
   "/requests",
@@ -39,6 +44,25 @@ router.post(
   authorize(UserRole.PARENT),
   validate(addNewParentZod),
   childControllers.addNewParent
+);
+
+router.post(
+  "/:childId/add-request",
+  authorize(UserRole.PARENT),
+  childControllers.addChildRequest
+);
+
+router.get(
+  "/add-request",
+  authorize(UserRole.PARENT),
+  childControllers.getChildAddRequests
+);
+
+router.patch(
+  "/:addChildRequestId/add-request",
+  authorize(UserRole.PARENT),
+  validate(updateChildStatusSchema),
+  childControllers.updateChildAddRequest
 );
 
 export const childRoutes = router;
