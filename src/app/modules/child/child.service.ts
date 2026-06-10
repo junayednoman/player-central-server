@@ -126,6 +126,7 @@ const updateChildStatus = async (
           id: parentAuthId,
         },
       },
+      status: ChildStatus.PENDING,
     },
   });
 
@@ -193,22 +194,101 @@ const updateDefaultChildId = async (childId: string, parentAuthId: string) => {
   return result;
 };
 
-const addNewParent = async (payload: TUpdateNewParent, childId: string) => {
+const addNewParent = async (
+  payload: TUpdateNewParent,
+  childId: string,
+  parentAuthId: string
+) => {
   await prisma.child.findUniqueOrThrow({
     where: {
       id: childId,
     },
   });
 
-  const result = await prisma.child.update({
-    where: {
-      id: childId,
-    },
+  const result = await prisma.addParentRequest.create({
     data: {
-      parents: {
-        connect: [{ id: payload.parentId }],
+      childId: childId,
+      requesterParentId: parentAuthId,
+      newParentId: payload.newParentId,
+    },
+  });
+
+  return result;
+};
+
+const getAllReceivedAddNewParentRequests = async (parentAuthId: string) => {
+  const result = await prisma.addParentRequest.findMany({
+    where: {
+      newParentId: parentAuthId,
+    },
+    include: {
+      child: {
+        include: {
+          player: {
+            select: {
+              email: true,
+              profile: {
+                select: {
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      requesterParent: {
+        select: {
+          email: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
       },
     },
+  });
+
+  return result;
+};
+
+const updateAddNewParentRequest = async (
+  requestId: string,
+  status: "APPROVED" | "REJECTED"
+) => {
+  const request = await prisma.addParentRequest.findUniqueOrThrow({
+    where: {
+      id: requestId,
+    },
+  });
+
+  const result = await prisma.$transaction(async tx => {
+    if (status === "APPROVED") {
+      await tx.child.update({
+        where: {
+          id: request.childId,
+        },
+        data: {
+          parents: {
+            connect: [{ id: request.newParentId }],
+          },
+        },
+      });
+    } else if (status === "REJECTED") {
+      await tx.auth.delete({
+        where: {
+          id: request.newParentId,
+        },
+      });
+    }
+
+    return await tx.addParentRequest.delete({
+      where: {
+        id: requestId,
+      },
+    });
   });
 
   return result;
@@ -377,15 +457,46 @@ const getAllAvailableChild = async (parentAuthId: string) => {
   return result;
 };
 
+const getChildSignUpRequests = async (parentAuthId: string) => {
+  const result = await prisma.child.findMany({
+    where: {
+      parents: {
+        some: {
+          id: parentAuthId,
+        },
+      },
+      status: ChildStatus.PENDING,
+    },
+    include: {
+      player: {
+        select: {
+          email: true,
+          profile: {
+            select: {
+              name: true,
+              image: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return result;
+};
+
 export const childService = {
   getAllChildren,
   getChildApprovalRequests,
   updateChildStatus,
   getParentsByChildId,
   updateDefaultChildId,
+  getAllReceivedAddNewParentRequests,
   addNewParent,
+  updateAddNewParentRequest,
   addChildRequest,
   getChildAddRequests,
   updateChildAddRequest,
   getAllAvailableChild,
+  getChildSignUpRequests,
 };

@@ -39,11 +39,24 @@ router.patch(
   childControllers.updateDefaultChildId
 );
 
+router.get(
+  "/parents/requests",
+  authorize(UserRole.PARENT),
+  childControllers.getAllReceivedAddNewParentRequests
+);
+
 router.post(
   "/:id/parents",
   authorize(UserRole.PARENT),
   validate(addNewParentZod),
   childControllers.addNewParent
+);
+
+router.patch(
+  "/:requestId/parents",
+  authorize(UserRole.PARENT),
+  validate(updateChildStatusSchema),
+  childControllers.updateAddNewParentRequest
 );
 
 router.post(
@@ -63,6 +76,12 @@ router.patch(
   authorize(UserRole.PARENT),
   validate(updateChildStatusSchema),
   childControllers.updateChildAddRequest
+);
+
+router.get(
+  "/sign-up-requests",
+  authorize(UserRole.PARENT),
+  childControllers.getChildSignUpRequests
 );
 
 export const childRoutes = router;

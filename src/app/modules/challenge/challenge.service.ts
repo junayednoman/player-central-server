@@ -130,10 +130,12 @@ const getSingle = async (id: string, user?: TAuthUser) => {
       orderBy: { createdAt: "desc" },
       take: 4,
       select: {
+        video: true,
         player: {
           select: {
             profile: {
               select: {
+                authId: true,
                 name: true,
                 image: true,
               },
@@ -159,9 +161,7 @@ const getSingle = async (id: string, user?: TAuthUser) => {
     ...challenge,
     isBookmarked: user?.role === "PLAYER" ? Boolean(bookmark) : false,
     acceptedCount,
-    acceptedPreview: acceptedPreview
-      .map(item => item.player?.profile)
-      .filter(Boolean),
+    acceptedPreview,
   };
 };
 

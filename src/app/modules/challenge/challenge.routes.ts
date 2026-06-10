@@ -32,7 +32,7 @@ router.get(
 );
 router.get(
   "/submissions/:playerId",
-  authorize(UserRole.PLAYER, UserRole.COACH),
+  authorize(UserRole.PLAYER, UserRole.COACH, UserRole.SCOUT),
   challengeController.getPlayerSubmissions
 );
 router.get(

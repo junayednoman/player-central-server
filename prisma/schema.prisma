@@ -33,7 +33,7 @@ model Auth {
   playerInvitations          Invitation[]               @relation("PlayerInvitations")
   scoutInvitations           Invitation[]               @relation("ScoutInvitations")
   sentMessages               Message[]                  @relation("MessageSender")
-  parentProfile              ParentProfile?
+  parentProfile              ParentProfile? 
   payments                   Payment[]
   coachBookmarks             PlayerBookmark[]           @relation("CoachBookmarks")
   playerBookmarks            PlayerBookmark[]           @relation("PlayerBookmarks")
@@ -63,6 +63,8 @@ model Auth {
   children                   Child[]                    @relation("ParentToChildren")
   customSessionPlayers       CustomSessionBooking[]     @relation("CustomSessionPlayers")
   childApprovalRequests      ChildApprovalRequest[]     @relation("ChildApprovals")
+  receivedAddParentRequests  AddParentRequest[]         @relation("receivedAddParentRequests")
+  requestedAddParentRequests AddParentRequest[]         @relation("requestedAddParentRequests")
 
   @@map("auth")
 }
@@ -465,6 +467,7 @@ model Child {
   ParentToChildren      ParentToChildren[]
   auths                 Auth[]
   childApprovalRequests ChildApprovalRequest[]
+  addParentRequests     AddParentRequest[]
 }
 
 model ChildApprovalRequest {
@@ -476,6 +479,18 @@ model ChildApprovalRequest {
   createdAt         DateTime @default(now())
 
   @@unique([childId, requesterParentId])
+}
+
+model AddParentRequest {
+  id                String @id @default(uuid())
+  childId           String
+  child             Child  @relation(fields: [childId], references: [id])
+  newParentId       String
+  requesterParentId String
+  newParent         Auth   @relation("receivedAddParentRequests", fields: [newParentId], references: [id])
+  requesterParent   Auth   @relation("requestedAddParentRequests", fields: [requesterParentId], references: [id])
+
+  createdAt DateTime @default(now())
 }
 
 model Notification {

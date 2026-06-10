@@ -5,7 +5,7 @@ export const updateChildStatusSchema = z.object({
 });
 
 export const addNewParentZod = z.object({
-  parentId: z.string().uuid(),
+  newParentId: z.string().uuid(),
 });
 
 export type TUpdateNewParent = z.infer<typeof addNewParentZod>;

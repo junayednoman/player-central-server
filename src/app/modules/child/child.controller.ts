@@ -82,7 +82,8 @@ const addNewParent = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
     const result = await childService.addNewParent(
       req.body,
-      req.params?.id as string
+      req.params?.id as string,
+      req.user?.id as string
     );
 
     sendResponse(res, {
@@ -151,15 +152,61 @@ const getAllAvailableChild = handleAsyncRequest(
   }
 );
 
+const getChildSignUpRequests = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.getChildSignUpRequests(
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Child sign up requests retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+const getAllReceivedAddNewParentRequests = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.getAllReceivedAddNewParentRequests(
+      req.user?.id as string
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Add new parent requests retrieved successfully",
+      data: result,
+    });
+  }
+);
+
+const updateAddNewParentRequest = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const result = await childService.updateAddNewParentRequest(
+      req.params?.requestId as string,
+      req.body.status
+    );
+
+    sendResponse(res, {
+      success: true,
+      message: "Add new parent request updated successfully",
+      data: result,
+    });
+  }
+);
+
 export const childControllers = {
   getAllChildren,
   getChildApprovalRequests,
   updateChildStatus,
   getParentsByChildId,
   updateDefaultChildId,
+  getAllReceivedAddNewParentRequests,
   addNewParent,
+  updateAddNewParentRequest,
   addChildRequest,
   getChildAddRequests,
   updateChildAddRequest,
   getAllAvailableChild,
+  getChildSignUpRequests,
 };
