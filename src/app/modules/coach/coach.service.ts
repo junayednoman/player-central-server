@@ -568,6 +568,27 @@ const getAvailabilitySlots = async (coachAuthId: string, date: string) => {
     ]);
   const bookedRanges = bookings.concat(customSessions);
 
+  console.log("[coach.getAvailabilitySlots] source", {
+    coachAuthId,
+    date,
+    day: day.toISOString(),
+    availabilityBlocks: availabilityBlocks.map(block => ({
+      id: block.id,
+      isRecurring: block.isRecurring,
+      dayOfWeek: block.dayOfWeek,
+      startTime: block.startTime?.toISOString() ?? null,
+      endTime: block.endTime?.toISOString() ?? null,
+      startAt: block.startAt?.toISOString() ?? null,
+      endAt: block.endAt?.toISOString() ?? null,
+      validFrom: block.validFrom?.toISOString() ?? null,
+      validUntil: block.validUntil?.toISOString() ?? null,
+    })),
+    bookedRanges: bookedRanges.map(range => ({
+      startAt: range.startAt.toISOString(),
+      endAt: range.endAt.toISOString(),
+    })),
+  });
+
   const slots = availabilityBlocks
     .map(block => {
       if (block.isRecurring) {
@@ -617,6 +638,17 @@ const getAvailabilitySlots = async (coachAuthId: string, date: string) => {
       b => slot.startAt < b.endAt && slot.endAt > b.startAt
     ),
   }));
+
+  console.log("[coach.getAvailabilitySlots] computed", {
+    coachAuthId,
+    date,
+    slots: results.map(slot => ({
+      availabilityBlockId: slot.availabilityBlockId,
+      startAt: slot.startAt.toISOString(),
+      endAt: slot.endAt.toISOString(),
+      isBooked: slot.isBooked,
+    })),
+  });
 
   return { date, slots: results };
 };

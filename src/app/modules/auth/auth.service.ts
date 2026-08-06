@@ -29,6 +29,7 @@ import {
 import generateOTP from "../../utils/generateOTP";
 import { TFile } from "../../interface/file.interface";
 import { getAge, parseDate, parseTime } from "../../utils/common.utils";
+import { assertNoOverlappingAvailabilityBlocks } from "../../utils/availabilityBlocks";
 
 const signUp = async (payload: TSignup, file: TFile) => {
   const existingUser = await prisma.auth.findUnique({
@@ -134,6 +135,8 @@ const signUp = async (payload: TSignup, file: TFile) => {
       }
 
       if (payload.role === UserRole.COACH) {
+        assertNoOverlappingAvailabilityBlocks(payload.availabilityBlocks);
+
         await tn.coachProfile.upsert({
           where: {
             authId: result.id,

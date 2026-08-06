@@ -10,7 +10,6 @@ import {
   isWithinValidRange,
   combineDateAndTime,
   parseUTCDateOnly,
-  toMinutes,
 } from "../../utils/booking.utils";
 import { TCreateSessionBooking } from "./sessionBooking.validation";
 import {
@@ -24,6 +23,12 @@ const checkSlotAvailability = async (
   endAt: Date
 ) => {
   const now = new Date();
+  console.log("[booking.checkSlotAvailability] start", {
+    coachAuthId,
+    requestedStartAt: startAt.toISOString(),
+    requestedEndAt: endAt.toISOString(),
+  });
+
   await prisma.sessionBooking.updateMany({
     where: {
       status: "PENDING_PAYMENT",
@@ -40,6 +45,32 @@ const checkSlotAvailability = async (
       where: { coachAuthId, type: "BLACKOUT" },
     }),
   ]);
+
+  console.log("[booking.checkSlotAvailability] blocks", {
+    coachAuthId,
+    availabilityBlocks: availabilityBlocks.map(block => ({
+      id: block.id,
+      isRecurring: block.isRecurring,
+      dayOfWeek: block.dayOfWeek,
+      startTime: block.startTime?.toISOString() ?? null,
+      endTime: block.endTime?.toISOString() ?? null,
+      startAt: block.startAt?.toISOString() ?? null,
+      endAt: block.endAt?.toISOString() ?? null,
+      validFrom: block.validFrom?.toISOString() ?? null,
+      validUntil: block.validUntil?.toISOString() ?? null,
+    })),
+    blackoutBlocks: blackoutBlocks.map(block => ({
+      id: block.id,
+      isRecurring: block.isRecurring,
+      dayOfWeek: block.dayOfWeek,
+      startTime: block.startTime?.toISOString() ?? null,
+      endTime: block.endTime?.toISOString() ?? null,
+      startAt: block.startAt?.toISOString() ?? null,
+      endAt: block.endAt?.toISOString() ?? null,
+      validFrom: block.validFrom?.toISOString() ?? null,
+      validUntil: block.validUntil?.toISOString() ?? null,
+    })),
+  });
 
   const requestDay = getDayOfWeek(startAt);
   const requestStartMin = toMinutes(startAt);
@@ -64,6 +95,11 @@ const checkSlotAvailability = async (
     return overlapsDateTime(block.startAt, block.endAt);
   });
 
+  console.log("[booking.checkSlotAvailability] hasBlackout", {
+    coachAuthId,
+    hasBlackout,
+  });
+
   if (hasBlackout) {
     throw new ApiError(409, "Selected slot is not available");
   }
@@ -81,6 +117,11 @@ const checkSlotAvailability = async (
     }
     if (!block.startAt || !block.endAt) return false;
     return startAt >= block.startAt && endAt <= block.endAt;
+  });
+
+  console.log("[booking.checkSlotAvailability] hasAvailability", {
+    coachAuthId,
+    hasAvailability,
   });
 
   if (!hasAvailability) {
@@ -103,6 +144,11 @@ const checkSlotAvailability = async (
     select: { id: true },
   });
 
+  console.log("[booking.checkSlotAvailability] sessionConflict", {
+    coachAuthId,
+    conflictId: conflict?.id ?? null,
+  });
+
   if (conflict) {
     throw new ApiError(409, "Selected slot is not available");
   }
@@ -117,6 +163,11 @@ const checkSlotAvailability = async (
       endAt: { gt: startAt },
     },
     select: { id: true },
+  });
+
+  console.log("[booking.checkSlotAvailability] customConflict", {
+    coachAuthId,
+    customConflictId: customConflict?.id ?? null,
   });
 
   if (customConflict) {
@@ -187,6 +238,24 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
   if (block.type !== "AVAILABLE")
     throw new ApiError(400, "Selected slot is not available");
 
+  console.log("[booking.create] selectedBlock", {
+    playerAuthId,
+    payload,
+    block: {
+      id: block.id,
+      coachAuthId: block.coachAuthId,
+      type: block.type,
+      isRecurring: block.isRecurring,
+      dayOfWeek: block.dayOfWeek,
+      startTime: block.startTime?.toISOString() ?? null,
+      endTime: block.endTime?.toISOString() ?? null,
+      startAt: block.startAt?.toISOString() ?? null,
+      endAt: block.endAt?.toISOString() ?? null,
+      validFrom: block.validFrom?.toISOString() ?? null,
+      validUntil: block.validUntil?.toISOString() ?? null,
+    },
+  });
+
   let startAt: Date;
   let endAt: Date;
 
@@ -212,6 +281,12 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
     startAt = block.startAt;
     endAt = block.endAt;
   }
+
+  console.log("[booking.create] resolvedWindow", {
+    availabilityBlockId: block.id,
+    startAt: startAt.toISOString(),
+    endAt: endAt.toISOString(),
+  });
 
   await checkSlotAvailability(block.coachAuthId, startAt, endAt);
   await checkPlayerDoubleBooking(playerAuthId, startAt, endAt);
@@ -250,6 +325,16 @@ const create = async (playerAuthId: string, payload: TCreateSessionBooking) => {
       status: "PENDING_PAYMENT",
       reservedUntil,
     },
+  });
+
+  console.log("[booking.create] createdBooking", {
+    bookingId: booking.id,
+    coachAuthId: booking.coachAuthId,
+    playerAuthId: booking.playerAuthId,
+    startAt: booking.startAt.toISOString(),
+    endAt: booking.endAt.toISOString(),
+    status: booking.status,
+    reservedUntil: booking.reservedUntil?.toISOString() ?? null,
   });
 
   if (isMinor) {
