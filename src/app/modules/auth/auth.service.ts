@@ -416,6 +416,7 @@ const getAll = async (
       id: true,
       email: true,
       role: true,
+      status: true,
       createdAt: true,
       profile: {
         select: {

@@ -1,4 +1,4 @@
-import { Prisma, SubscriptionStatus, UserRole } from "@prisma/client";
+import { Prisma, UserRole } from "@prisma/client";
 import { TFile } from "../../interface/file.interface";
 import { deleteFromS3, uploadToS3 } from "../../utils/awss3";
 import prisma from "../../utils/prisma";
@@ -45,12 +45,28 @@ const updateProfile = async (
 const getDashboardStats = async (year: number) => {
   const startDate = new Date(Date.UTC(year, 0, 1, 0, 0, 0, 0));
   const endDate = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0, 0));
+  const monthNames = [
+    "january",
+    "february",
+    "march",
+    "april",
+    "may",
+    "june",
+    "july",
+    "august",
+    "september",
+    "october",
+    "november",
+    "december",
+  ];
 
-  const [totalPlayers, totalCoaches, totalScouts, totalSubscribedUsers, rawUserOverview] =
+  const [totalUsers, totalCoaches, totalScouts, rawUserOverview] =
     await Promise.all([
       prisma.auth.count({
         where: {
-          role: UserRole.PLAYER,
+          role: {
+            not: UserRole.ADMIN,
+          },
         },
       }),
       prisma.auth.count({
@@ -61,11 +77,6 @@ const getDashboardStats = async (year: number) => {
       prisma.auth.count({
         where: {
           role: UserRole.SCOUT,
-        },
-      }),
-      prisma.subscription.count({
-        where: {
-          status: SubscriptionStatus.ACTIVE,
         },
       }),
       prisma.$queryRaw<Array<{ month: number; users: bigint }>>`
@@ -86,15 +97,14 @@ const getDashboardStats = async (year: number) => {
   );
 
   const userOverview = Array.from({ length: 12 }, (_, index) => ({
-    month: index + 1,
+    month: monthNames[index],
     users: monthMap.get(index + 1) ?? 0,
   }));
 
   return {
-    totalPlayers,
+    totalUsers,
     totalCoaches,
     totalScouts,
-    totalSubscribedUsers,
     userOverview,
   };
 };
