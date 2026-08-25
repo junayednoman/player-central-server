@@ -17,6 +17,8 @@ import {
   retrieveStripePaymentIntent,
 } from "../../utils/stripe";
 
+const toMinutes = (date: Date) => date.getUTCHours() * 60 + date.getUTCMinutes();
+
 const checkSlotAvailability = async (
   coachAuthId: string,
   startAt: Date,

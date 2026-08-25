@@ -23,9 +23,12 @@ import { PostStatus, Prisma } from "@prisma/client";
 const create = async (
   payload: TCreatePost,
   file: TFile,
-  playerAuthId?: string,
-  parentAuthId?: string
+  playerAuthId?: string
 ) => {
+  if (!playerAuthId) {
+    throw new ApiError(401, "Unauthorized");
+  }
+
   const videoUrl = await uploadToS3(file);
 
   const playerProfile = await prisma.playerProfile.findUnique({
@@ -159,7 +162,7 @@ const confirmPayment = async (postId: string, payerAuthId: string) => {
       if (!existingApproval) {
         await tx.postApprovalRequest.create({
           data: {
-            playerAuthId: post.playerAuthId,
+            playerAuthId: post.playerAuthId!,
             postId,
             status: "PENDING",
           },
