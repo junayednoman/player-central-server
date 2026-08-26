@@ -1,6 +1,6 @@
 import prisma from "../../utils/prisma";
 import ApiError from "../../classes/ApiError";
-import { uploadToS3 } from "../../utils/awss3";
+import { deleteFromS3, uploadToS3 } from "../../utils/awss3";
 import { TFile } from "../../interface/file.interface";
 import {
   calculatePagination,
@@ -18,7 +18,7 @@ import {
   createStripePaymentIntent,
   retrieveStripePaymentIntent,
 } from "../../utils/stripe";
-import { PostStatus, Prisma } from "@prisma/client";
+import { PostStatus, Prisma, UserRole } from "@prisma/client";
 
 const create = async (
   payload: TCreatePost,
@@ -476,13 +476,18 @@ const update = async (
   });
 };
 
-const remove = async (postId: string, playerAuthId: string) => {
+const remove = async (
+  postId: string,
+  playerAuthId: string,
+  authRole: UserRole
+) => {
   const existing = await prisma.post.findUnique({ where: { id: postId } });
   if (!existing) throw new ApiError(404, "Post not found");
-  if (existing.playerAuthId !== playerAuthId)
+  if (authRole !== "ADMIN" && existing.playerAuthId !== playerAuthId)
     throw new ApiError(403, "Unauthorized");
 
-  return prisma.post.delete({ where: { id: postId } });
+  const result = await prisma.post.delete({ where: { id: postId } });
+  if (result) await deleteFromS3(result.video);
 };
 
 const incrementShare = async (postId: string, authId: string) => {

@@ -4,6 +4,10 @@ import { sendResponse } from "../../utils/sendResponse";
 import { TRequest } from "../../interface/global.interface";
 import { paymentServices } from "./payment.service";
 import pick from "../../utils/pick";
+import {
+  paymentRoleTotalQueryZod,
+  paymentTransactionsQueryZod,
+} from "./payment.validation";
 
 const getCoachPayments = handleAsyncRequest(
   async (req: TRequest, res: Response) => {
@@ -63,8 +67,44 @@ const getCoachMonthlyEarnings = handleAsyncRequest(
   }
 );
 
+const getAllPaymentTransactions = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const query = paymentTransactionsQueryZod.parse(req.query);
+    const options = pick(query, ["page", "limit", "sortBy", "orderBy"]);
+
+    const result = await paymentServices.getAllPaymentTransactions(
+      options,
+      query.year,
+      query.month
+    );
+
+    sendResponse(res, {
+      message: "Payment transactions retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
+const getRolePaymentTotal = handleAsyncRequest(
+  async (req: TRequest, res: Response) => {
+    const query = paymentRoleTotalQueryZod.parse(req.query);
+    const result = await paymentServices.getRolePaymentTotal(
+      query.role,
+      query.dateFrom,
+      query.dateTo
+    );
+
+    sendResponse(res, {
+      message: "Role payment total retrieved successfully!",
+      data: result,
+    });
+  }
+);
+
 export const paymentController = {
   getCoachPayments,
   getCoachTotalEarnings,
   getCoachMonthlyEarnings,
+  getAllPaymentTransactions,
+  getRolePaymentTotal,
 };

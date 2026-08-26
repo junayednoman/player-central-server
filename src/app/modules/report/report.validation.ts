@@ -13,9 +13,7 @@ export const createReportZod = z
 export const getReportsQueryZod = z.object({
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().optional(),
-  type: z
-    .enum(["COMMUNITY_POST", "PREMIUM_POST", "CHALLENGE"])
-    .optional(),
+  type: z.enum(["COMMUNITY_POST", "PREMIUM_POST", "CHALLENGE"]).optional(),
 });
 
 export const removeReportedContentZod = z.object({

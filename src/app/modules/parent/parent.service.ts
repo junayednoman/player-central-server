@@ -115,7 +115,7 @@ const updateProfile = async (
     const updatedParent = await tx.parentProfile.update({
       where: { authId },
       data: {
-        ...(payload.phone ? { phone: payload.phone } : {}),
+        ...(typeof payload.phone !== "undefined" ? { phone: payload.phone } : {}),
       },
       include: {
         auth: {

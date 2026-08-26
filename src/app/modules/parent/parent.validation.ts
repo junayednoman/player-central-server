@@ -2,7 +2,7 @@ import z from "zod";
 
 export const updateParentProfileZod = z.object({
   name: z.string().min(1, "Name is required").trim().optional(),
-  phone: z.string().min(1, "Phone is required").trim().optional(),
+  phone: z.string().trim().optional(),
 });
 
 export const updateChildAccessZod = z

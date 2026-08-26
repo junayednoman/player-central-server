@@ -5,6 +5,7 @@ import ApiError from "../../classes/ApiError";
 import pick from "../../utils/pick";
 import { TRequest } from "../../interface/global.interface";
 import { postServices } from "./post.service";
+import { UserRole } from "@prisma/client";
 
 const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   if (!req.file) throw new ApiError(400, "Video file is required");
@@ -79,7 +80,8 @@ const update = handleAsyncRequest(async (req: TRequest, res: Response) => {
 const remove = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await postServices.remove(
     req.params.postId as string,
-    req.user?.id as string
+    req.user?.id as string,
+    req.user?.role as UserRole
   );
   sendResponse(res, {
     message: "Post deleted successfully!",

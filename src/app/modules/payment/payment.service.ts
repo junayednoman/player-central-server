@@ -1,5 +1,5 @@
 import prisma from "../../utils/prisma";
-import { Prisma } from "@prisma/client";
+import { PaymentStatus, Prisma, UserRole } from "@prisma/client";
 import {
   calculatePagination,
   TPaginationOptions,
@@ -19,6 +19,36 @@ const MONTH_NAMES = [
   "november",
   "december",
 ];
+
+const buildCreatedAtFilter = (
+  year?: number,
+  month?: number,
+  dateFrom?: Date,
+  dateTo?: Date
+): Prisma.DateTimeFilter | undefined => {
+  if (dateFrom || dateTo) {
+    return {
+      ...(dateFrom ? { gte: dateFrom } : {}),
+      ...(dateTo ? { lte: dateTo } : {}),
+    };
+  }
+
+  if (year !== undefined) {
+    if (month !== undefined) {
+      return {
+        gte: new Date(year, month - 1, 1, 0, 0, 0, 0),
+        lt: new Date(year, month, 1, 0, 0, 0, 0),
+      };
+    }
+
+    return {
+      gte: new Date(year, 0, 1, 0, 0, 0, 0),
+      lt: new Date(year + 1, 0, 1, 0, 0, 0, 0),
+    };
+  }
+
+  return undefined;
+};
 
 const getCoachPayments = async (
   coachId: string,
@@ -143,8 +173,95 @@ const getCoachMonthlyEarnings = async (coachId: string, year?: number) => {
   }));
 };
 
+const getAllPaymentTransactions = async (
+  options: TPaginationOptions,
+  year?: number,
+  month?: number
+) => {
+  const { page, take, skip, sortBy, orderBy } = calculatePagination(options);
+  const createdAt = buildCreatedAtFilter(year, month);
+
+  const where: Prisma.PaymentWhereInput = {
+    status: PaymentStatus.SUCCEEDED,
+    ...(createdAt ? { createdAt } : {}),
+  };
+
+  const [transactions, total] = await Promise.all([
+    prisma.payment.findMany({
+      where,
+      select: {
+        amount: true,
+        payer: {
+          select: {
+            email: true,
+            role: true,
+            profile: {
+              select: {
+                image: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      skip,
+      take,
+      orderBy:
+        sortBy && orderBy
+          ? { [sortBy]: orderBy }
+          : { createdAt: "desc" },
+    }),
+    prisma.payment.count({ where }),
+  ]);
+
+  return {
+    meta: {
+      page,
+      limit: take,
+      total,
+    },
+    transactions: transactions.map(transaction => ({
+      payerImage: transaction.payer.profile?.image ?? null,
+      payerName: transaction.payer.profile?.name ?? "Unknown",
+      payerEmail: transaction.payer.email,
+      payerRole: transaction.payer.role,
+      amount: transaction.amount,
+    })),
+  };
+};
+
+const getRolePaymentTotal = async (
+  role: UserRole.PLAYER | UserRole.COACH | UserRole.SCOUT,
+  dateFrom?: Date,
+  dateTo?: Date
+) => {
+  const createdAt = buildCreatedAtFilter(undefined, undefined, dateFrom, dateTo);
+
+  const aggregate = await prisma.payment.aggregate({
+    where: {
+      status: PaymentStatus.SUCCEEDED,
+      payer: {
+        role,
+      },
+      ...(createdAt ? { createdAt } : {}),
+    },
+    _sum: {
+      amount: true,
+    },
+  });
+
+  return {
+    role,
+    totalAmount: aggregate._sum.amount ?? 0,
+    dateFrom: dateFrom ?? null,
+    dateTo: dateTo ?? null,
+  };
+};
+
 export const paymentServices = {
   getCoachPayments,
   getCoachTotalEarnings,
   getCoachMonthlyEarnings,
+  getAllPaymentTransactions,
+  getRolePaymentTotal,
 };

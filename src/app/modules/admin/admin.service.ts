@@ -121,8 +121,16 @@ type TEarningStatsQuery = {
 };
 
 const getEarningStats = async (query: TEarningStatsQuery) => {
-  const { page = 1, limit = 10, searchTerm, type, year, month, dateFrom, dateTo } =
-    query;
+  const {
+    page = 1,
+    limit = 10,
+    searchTerm,
+    type,
+    year,
+    month,
+    dateFrom,
+    dateTo,
+  } = query;
 
   const { take, skip } = {
     take: Number(limit),
@@ -211,72 +219,75 @@ const getEarningStats = async (query: TEarningStatsQuery) => {
     ],
   };
 
-  const [allSucceededPayments, allSucceededSubscriptionPayments, transactions, total] =
-    await Promise.all([
-      prisma.payment.aggregate({
-        where: baseWhere,
-        _sum: {
-          amount: true,
-        },
-      }),
-      prisma.payment.aggregate({
-        where: {
-          AND: [
-            baseWhere,
-            {
-              type: "SUBSCRIPTION",
-            },
-          ],
-        },
-        _sum: {
-          amount: true,
-        },
-      }),
-      prisma.payment.findMany({
-        where: transactionWhere,
-        select: {
-          id: true,
-          amount: true,
-          currency: true,
-          type: true,
-          createdAt: true,
-          payer: {
-            select: {
-              email: true,
-              role: true,
-              profile: {
-                select: {
-                  image: true,
-                  name: true,
-                },
-              },
-            },
+  const [
+    allSucceededPayments,
+    allSucceededSubscriptionPayments,
+    transactions,
+    total,
+  ] = await Promise.all([
+    prisma.payment.aggregate({
+      where: baseWhere,
+      _sum: {
+        amount: true,
+      },
+    }),
+    prisma.payment.aggregate({
+      where: {
+        AND: [
+          baseWhere,
+          {
+            type: "SUBSCRIPTION",
           },
-          subscription: {
-            select: {
-              auth: {
-                select: {
-                  role: true,
-                },
+        ],
+      },
+      _sum: {
+        amount: true,
+      },
+    }),
+    prisma.payment.findMany({
+      where: transactionWhere,
+      select: {
+        id: true,
+        amount: true,
+        currency: true,
+        type: true,
+        createdAt: true,
+        payer: {
+          select: {
+            email: true,
+            role: true,
+            profile: {
+              select: {
+                image: true,
+                name: true,
               },
             },
           },
         },
-        skip,
-        take,
-        orderBy: {
-          createdAt: "desc",
+        subscription: {
+          select: {
+            auth: {
+              select: {
+                role: true,
+              },
+            },
+          },
         },
-      }),
-      prisma.payment.count({
-        where: transactionWhere,
-      }),
-    ]);
+      },
+      skip,
+      take,
+      orderBy: {
+        createdAt: "desc",
+      },
+    }),
+    prisma.payment.count({
+      where: transactionWhere,
+    }),
+  ]);
 
   return {
     totalEarning: allSucceededPayments._sum.amount ?? 0,
-    totalSubscriptionEarning:
-      allSucceededSubscriptionPayments._sum.amount ?? 0,
+    totalSubscriptionEarning: allSucceededSubscriptionPayments._sum.amount ?? 0,
     transactions: {
       meta: {
         page: Number(page),

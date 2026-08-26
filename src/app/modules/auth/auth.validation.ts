@@ -68,7 +68,7 @@ const scoutSignupZod = z.object({
 const parentSignupZod = z.object({
   role: z.literal("PARENT"),
   ...commonSignupFields,
-  phone: z.string().min(1, "Phone is required").trim(),
+  phone: z.string().trim().optional(),
 });
 
 export const signupZod = z.discriminatedUnion("role", [

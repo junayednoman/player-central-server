@@ -5,6 +5,7 @@ import { challengeServices } from "./challenge.service";
 import { TRequest } from "../../interface/global.interface";
 import ApiError from "../../classes/ApiError";
 import pick from "../../utils/pick";
+import { UserRole } from "@prisma/client";
 
 const create = handleAsyncRequest(async (req: TRequest, res: Response) => {
   if (!req.file) throw new ApiError(400, "Video file is required");
@@ -68,7 +69,8 @@ const update = handleAsyncRequest(async (req: TRequest, res: Response) => {
 const remove = handleAsyncRequest(async (req: TRequest, res: Response) => {
   const result = await challengeServices.remove(
     req.params.challengeId as string,
-    req.user?.id as string
+    req.user?.id as string,
+    req.user?.role as UserRole
   );
   sendResponse(res, {
     message: "Challenge deleted successfully!",

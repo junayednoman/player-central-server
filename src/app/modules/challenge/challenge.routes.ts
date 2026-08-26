@@ -48,7 +48,7 @@ router.put(
 );
 router.delete(
   "/:challengeId",
-  authorize(UserRole.COACH),
+  authorize(UserRole.COACH, UserRole.ADMIN),
   challengeController.remove
 );
 router.post(

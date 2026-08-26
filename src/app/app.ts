@@ -8,6 +8,17 @@ import { subscriptionController } from "./modules/subscription/subscription.cont
 
 const app: Application = express();
 
+app.use(
+  cors({
+    origin: [
+      "http://10.10.28.34:3000",
+      "http://72.244.153.29:3011",
+      "https://a3d4-162-4-34-65.ngrok-free.app",
+    ],
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+  })
+);
 app.post(
   "/api/v1/subscriptions/webhook/stripe",
   express.raw({ type: "application/json" }),
@@ -16,13 +27,6 @@ app.post(
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(
-  cors({
-    origin: ["http://10.10.28.34:3001", "http://72.244.153.29:3011"],
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  })
-);
 
 app.use(cookieParser());
 

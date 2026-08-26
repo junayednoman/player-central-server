@@ -1,7 +1,7 @@
 import prisma from "../../utils/prisma";
 import { TAuthUser } from "../../interface/global.interface";
 import ApiError from "../../classes/ApiError";
-import { uploadToS3 } from "../../utils/awss3";
+import { deleteFromS3, uploadToS3 } from "../../utils/awss3";
 import { TFile } from "../../interface/file.interface";
 import {
   calculatePagination,
@@ -13,6 +13,7 @@ import {
   TSubmitChallenge,
   TUpdateChallenge,
 } from "./challenge.validation";
+import { UserRole } from "@prisma/client";
 
 const challengeBookmarkModel = (prisma as any).challengeBookmark as {
   findUnique: (args: any) => Promise<any>;
@@ -181,13 +182,16 @@ const update = async (
   });
 };
 
-const remove = async (id: string, coachAuthId: string) => {
+const remove = async (id: string, coachAuthId: string, authRole: UserRole) => {
   const existing = await prisma.challenge.findUnique({ where: { id } });
   if (!existing) throw new ApiError(404, "Challenge not found");
-  if (existing.coachAuthId !== coachAuthId)
+  if (authRole !== "ADMIN" && existing.coachAuthId !== coachAuthId)
     throw new ApiError(403, "Unauthorized");
 
-  return prisma.challenge.delete({ where: { id } });
+  const result = await prisma.challenge.delete({ where: { id } });
+  if (result) await deleteFromS3(result.video);
+
+  return result;
 };
 
 const submit = async (

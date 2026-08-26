@@ -44,7 +44,11 @@ router.put(
   postController.update
 );
 
-router.delete("/:postId", authorize(UserRole.PLAYER), postController.remove);
+router.delete(
+  "/:postId",
+  authorize(UserRole.PLAYER, UserRole.ADMIN),
+  postController.remove
+);
 
 router.post("/:postId/share", authorize(), postController.share);
 

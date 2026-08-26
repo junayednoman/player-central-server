@@ -146,7 +146,7 @@ model ParentProfile {
   id             String   @id @default(uuid())
   authId         String   @unique
   defaultChildId String?
-  phone          String
+  phone          String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   auth           Auth     @relation(fields: [authId], references: [id])

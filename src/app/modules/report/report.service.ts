@@ -247,72 +247,71 @@ const removeContent = async (contentId: string, type: TReportContentType) => {
     );
 
     return { deleted: true, type };
-  }
-
-  const post = await prisma.post.findUnique({
-    where: { id: contentId },
-    select: {
-      id: true,
-      video: true,
-      approvalRequests: {
-        select: {
-          id: true,
+  } else if (type === "COMMUNITY_POST") {
+    const post = await prisma.post.findUnique({
+      where: { id: contentId },
+      select: {
+        id: true,
+        video: true,
+        approvalRequests: {
+          select: {
+            id: true,
+          },
         },
       },
-    },
-  });
-
-  if (!post) throw new ApiError(404, "Post not found");
-
-  await prisma.$transaction(async tx => {
-    await tx.comment.deleteMany({
-      where: {
-        postId: contentId,
-      },
     });
 
-    await tx.reaction.deleteMany({
-      where: {
-        postId: contentId,
-      },
+    if (!post) throw new ApiError(404, "Post not found");
+
+    await prisma.$transaction(async tx => {
+      await tx.comment.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await tx.reaction.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await tx.postShare.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await tx.postApprovalRequest.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await tx.payment.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await (tx as any).report.deleteMany({
+        where: {
+          postId: contentId,
+        },
+      });
+
+      await tx.post.delete({
+        where: {
+          id: contentId,
+        },
+      });
     });
 
-    await tx.postShare.deleteMany({
-      where: {
-        postId: contentId,
-      },
-    });
-
-    await tx.postApprovalRequest.deleteMany({
-      where: {
-        postId: contentId,
-      },
-    });
-
-    await tx.payment.deleteMany({
-      where: {
-        postId: contentId,
-      },
-    });
-
-    await (tx as any).report.deleteMany({
-      where: {
-        postId: contentId,
-      },
-    });
-
-    await tx.post.delete({
-      where: {
-        id: contentId,
-      },
-    });
-  });
-
-  if (post.video) {
-    await deleteFromS3(post.video);
+    if (post.video) {
+      await deleteFromS3(post.video);
+    }
+    return { deleted: true, type };
   }
-
-  return { deleted: true, type };
 };
 
 export const reportServices = {
